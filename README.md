@@ -1,3 +1,6 @@
+# A Deep Metric Learning Framework for Analyzing Handwriting by Writer: Verification, Retrieval, and Clustering
+
+
 # Writer Verification (Line-level, Patch Pooling)
 
 This project verifies whether two handwriting **lines** come from the **same writer**.
