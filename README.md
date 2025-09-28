@@ -18,6 +18,24 @@ Then the model compares two page level embeddings and finds cosine distance to d
 
 # Folder Order
 
+**1. data**
+
+**2. preprocessing**
+
+**3. modeling**
+
+**4. reports**
+
+**5. trained_model**
+
+**6. line_comparison**
+
+**7. page**
+
+**8. retrieval**
+
+**9. clustering**
+
 
 
 ## Dataset Layout (explicit)
