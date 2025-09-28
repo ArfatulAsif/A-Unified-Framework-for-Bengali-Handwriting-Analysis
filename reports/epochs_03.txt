@@ -1,0 +1,148 @@
+================ 140 Writer for training + validation ============  50 epoch =====
+
+================ 10 writers for testing ==============
+
+====================== Config.yml =================
+
+
+# Global configuration for the Writer Verification project (PyTorch-only).
+# Expected data layout:
+#   ./data/Train/<writer_id>/<doc_id>/*.jpg
+#   ./data/Test/<writer_id>/<doc_id>/*.jpg
+
+paths:
+  train_dir: "./data/Train"             # Path to the root folder for training data.
+  val_dir: ""                           # Path to a separate validation set. If empty, a split is made from the train_dir.
+  test_dir: "./data/Test"               # Path to the root folder for testing data.
+  model_dir: "./trained_model"          # General directory to save model-related files.
+  checkpoints_dir: "./trained_model"    # Specific directory for model checkpoints saved during training.
+  siamese_weights: "./trained_model/patch_encoder_check_points.pt"     # Save best check points while training epoch.
+  base_encoder_weights: "./trained_model/patch_encoder_best.pt" # Path where the best performing feature extractor (base network) is saved.
+
+runtime:
+  # NOTE: train.py reads seed from training.seed
+  # (runtime block is informational; safe to keep)
+  seed: 42                              # A general random seed for reproducibility in scripts that might use this block.
+
+preprocessing:
+  target_height: 128                    # What it is: Standard height in pixels for all line images after resizing. Aspect ratio is preserved.
+                                        # Effect: Increasing (e.g., to 160) may capture finer details but increases computational cost. Decreasing may lose information.
+  max_width: 1580                       # What it is: Width of the canvas onto which the resized line is placed.
+                                        # Effect: Increasing gives very long lines more space, preventing distortion. Only impactful if your dataset has extremely long lines.
+  patch_size: 128                       # What it is: The square dimension (patch_size x patch_size) of the image tiles fed to the model.
+                                        # Effect: Must match the model's expected input size. A larger patch sees more context but requires a different model architecture.
+  stride: 56                            # What it is: The step size (in pixels) for sliding the patch window across the line image.
+                                        # Effect: A smaller stride increases patch overlap, acting as data augmentation. This can improve accuracy but significantly slows down processing.
+  min_foreground: 0.04                  # What it is: The minimum fraction of "ink" a patch must have to be kept.  However during prediction of individual lines I found 0.04 is the best
+                                        # Effect: Increasing this makes the filter stricter, forcing the model to train on information-rich patches only, which can reduce noise and improve accuracy.
+  place_train: "random"                 # What it is: How to place shorter lines on the wide canvas during training.
+                                        # Effect: "random" is a crucial data augmentation step. Changing this to "center" or "left" will likely decrease model robustness and accuracy.
+  place_eval: "center"                  # What it is: How to place lines during evaluation/testing.
+                                        # Effect: "center" provides deterministic and consistent results, which is essential for reliable evaluation. Do not change.
+  use_illum: false                      # What it is: Enables illumination correction to handle shadows or uneven lighting.
+                                        # Effect: Set to `true` if your scans have shadows. Can significantly improve accuracy on low-quality scans but may be unnecessary for clean data.
+  use_clahe: false                      # What it is: Enables local contrast enhancement (CLAHE).
+                                        # Effect: Set to `true` if ink is faded or contrast is poor. Can improve accuracy by making strokes more visible.
+
+training:
+  seed: 42                              # What it is: The random seed for PyTorch, ensuring training runs are reproducible.
+                                        # Effect: Changing this will lead to different weight initializations and data shuffling, resulting in a slightly different final model.
+  epochs: 50                            # What it is: The maximum number of times the model will iterate over the entire training dataset.
+                                        # Effect: Too few epochs leads to underfitting; too many can lead to overfitting. Often used with early stopping.
+  batch_size: 16                        # What it is: The number of triplets processed in a single training step.
+                                        # Effect: Larger batches provide more stable gradients but use more memory. Smaller batches can sometimes help generalization.
+  learning_rate: 0.0001                 # What it is: The step size for the optimizer. One of the most critical hyperparameters.
+                                        # Effect: Too high can cause unstable training; too low can cause very slow or stalled training.
+  embedding_dim: 512                    # What it is: The size of the feature vector (embedding) that the model produces for each patch.
+                                        # Effect: A larger dimension can capture more information but increases model size and may overfit. A smaller dimension is faster but may be less expressive.
+  triplet_margin: 0.3                   # What it is: The required distance between "same writer" pairs and "different writer" pairs in the triplet loss.
+                                        # Effect: A larger margin makes the training task harder, forcing more separation. A smaller margin is easier to satisfy. This is a key parameter to tune.
+  patches_per_line: 8                   # What it is: The number of patches randomly sampled from each line image to form its overall embedding.
+                                        # Effect: More patches provide a more robust representation of the line but slow down training. Fewer patches are faster but may be less representative.
+  early_stopping_patience: 10           # What it is: How many epochs to wait for the validation loss to improve before stopping training.
+                                        # Effect: A smaller value stops training faster, preventing overfitting. A larger value gives the model more chances to escape a temporary plateau.
+  val_split_by_writers: 0.2             # What it is: The fraction of writers from the training set to hold out for validation (e.g., 0.2 = 20%).
+                                        # Effect: A larger split gives a more reliable validation metric but reduces the amount of data available for training.
+  num_workers: 0                        # What it is: The number of CPU processes to use for loading data in parallel.
+                                        # Effect: Increasing this (e.g., to 4) can speed up training if your CPU is a bottleneck, but `0` (main process only) is the most stable setting.
+
+evaluation:
+  metric: "cosine"                      # What it is: The distance metric for comparing embeddings. Cosine is excellent for high-dimensional vectors.
+                                        # Effect: This is an architectural choice. While cosine is standard, other metrics like Euclidean ('L2') could be used.
+  default_threshold: 0.17               # What it is: An initial guess for the decision threshold.
+                                        # Effect: Has no impact on the final result, as the evaluation script sweeps a range of thresholds to find the optimal one.
+  thresholds:
+    start: 0.00                         # The beginning of the range to test for the optimal threshold.
+    stop: 2.00                          # The end of the range.
+    step: 0.002                         # The increment for testing thresholds. A smaller step is more precise but makes the evaluation process slower.
+
+
+
+
+
+
+
+
+
+=====================================================================================
+===================================================================================
+
+
+
+
+ 
+ 
+ 
+ 
+ | 431/693 [03:30<02:10,  2.01it/s, loss=0.036Epoch 7/50:  62%|████████████████████████████████████████████████▌                             | 432/693 [03Epoch 7/50: 100%|██████████████████████████████████████████████████████████████████████████████| 693/693 [05:37<00:00,  2.05it/s, loss=0.0169]
+Epoch 7: loss=0.055199 - val_loss=0.080460
+0.0101]
+Epoch 8: loss=0.050665 - val_loss=0.063986
+Epoch 8: val_loss improved from 0.0737072877958417 to 0.063986, saving model weights...
+Epoch 9/50: 100%|███████████████████████████████████████████████████████████████████████████████████| 693/693 [05:34<00:00,  2.07it/s, loss=0.0024]
+Epoch 9: loss=0.046849 - val_loss=0.079176
+Epoch 10/50: 100%|██████████████████████████████████████████████████████████████████████████████████| 693/693 [05:59<00:00,  1.93it/s, loss=0.0095]
+Epoch 10: loss=0.045173 - val_loss=0.070973
+Epoch 11/50: 100%|██████████████████████████████████████████████████████████████████████████████████| 693/693 [05:35<00:00,  2.07it/s, loss=0.0386]
+Epoch 11: loss=0.040719 - val_loss=0.065405
+Epoch 12/50: 100%|██████████████████████████████████████████████████████████████████████████████████| 693/693 [05:34<00:00,  2.07it/s, loss=0.1058]
+Epoch 12: loss=0.039204 - val_loss=0.064131
+Epoch 13/50: 100%|██████████████████████████████████████████████████████████████████████████████████| 693/693 [05:33<00:00,  2.08it/s, loss=0.0036]
+Epoch 13: loss=0.033800 - val_loss=0.060713
+Epoch 13: val_loss improved from 0.06398633451334068 to 0.060713, saving model weights...
+Epoch 14/50: 100%|██████████████████████████████████████████████████████████████████████████████████| 693/693 [05:34<00:00,  2.07it/s, loss=0.0041]
+Epoch 14: loss=0.030863 - val_loss=0.061891
+Epoch 15/50:  44%|████████████████████████████████████                                              | 305/693 [02:31<03:09,  2.05it/s,                    Epoch 15/50:  44%|████████████████████████████████████                                              | 305/693 [02:32<03:09,  2.05it/s,                     Epoch 15/50:  44%|████████████████████████████████████▏                                             | 306/693 [02:32<03:11,  2.02it/s,                     Epoch 15/50:  44%|████████████████████████████████████▏                                             | 306/693 [02:32<03:11,  2.02it/s,                     Epoch 15/50:  44%|████████████████████████████████████▎                                             | 307/693 [02:32<03:13,  2.00it/s,                     Epoch 15/50:  44%|████████████████████████████████████▎                                             | 307/693 [02:33<03:13,  2.00it/s,                     Epoch 15/50:  44%|████████████████████████████████████▍                                             | 308/693 [02:33<03:15,  1.97it/s,                     Epoch 15/50:  44%|████████████████████████████████████▍                                             | 308/693 [02:33<03:15,  1.97it/s,                 Epoch 15/50:  45%|████████████████████████████████████▌                                             | 309/693 [02:33<03:14,  1.98it/s,                     Epoch 15/50:  45%|████████████████████████████████████▌                                             | 309/693 [02:34<03:14,  1.98it/s,                     Epoch 15/50:  45%|████████████████████████████████████▋                                             | 310/693 [02:34<03:09,  2.02it/s,                     Epoch 15/50:  45%|████████████████████████████████████▋                                             | 310/693 [02:34<03:09,  2.02it/s,                     Epoch 15/50:  45%|████████████████████████████████████▊                                             | 311/693 [02:34<03:08,  2.03it/s,                     Epoch 15/50:  45%|████████████████████████████████████▊                                             | 311/693 [02:35<03:08,  2.03it/s,                     Epoch 15/50:  45%|████████████████████████████████████▉                                             | 312/693 [02:35<03:03,  2.07it/s,              Epoch 15/50:  45%|████████████████████████████████████▉                                             | 312/693 [02:35<03:03,  2.07it/s,                     Epoch 15/50:  45%|█████████████████████████████████████                                             | 313/693 [02:35<03:07,  2.02it/s,                     5/50:  45%|█████████████████████████████████████                                             | 313/693 [02:36<03:07,  2.02it/s, lossEpo                    45%|█████████████████████████████████████▏                                            | 314/693 [02:36<03:02,  2.08it/s, lossEpoch 15/5                    ██████████████████████████████████▏                                            | 314/693 [02:36<03:02,  2.08it/s, lossEpoch 15/50:  45%                    ███████████████████████████▎                                            | 315/693 [02:36<03:02,  2.07it/s, lossEpoch 15/50:  45%|██████                    ███████████████████████▎                                            | 315/693 [02:37<03:02,  2.07it/s, lossEpoch 15/50:  46%|██████████          ███████████████████▍                                            | 316/693 [02:37<03:05,  2.03it/s, lossEpoch 15/50:  46%|██████████████                    ██████████████████▍                                            | 316/693 [02:37<03:05,  2.03it/s, lossEpoch 15/50:  46%|███████████████                    █████████████████▌                                            | 317/693 [02:37<03:03,  2.05it/s, lossEpoch 15/50:  46%|████████████████                    ████████████████▌                                            | 317/693 [02:38<03:03,  2.05it/s, lossEpoch 15/50:  46%|█████████████████                    ███████████████▋                                            | 318/693 [02:38<03:09,  1.98it/s, lossEpoch 15/50:  46%|██████████████████                    ██████████████▋                                            | 318/693 [02:38<03:09,  1.98it/s, lossEpoch 15/50:  46%|███████████████████                    ███████████████▋                                            | 318/693 [02:38<03:09,  1.98it/s, lossEpoch 15/50:  46%|██████████████████       █████████████████▋                                            | 318/693 [02:38<03:09,  1.98it/s, lossEpoch 15/50:  46%|████████████████                    ███████████████████▋                                            | 319/693 [02:38<03:08,  1.98it/s, lossEpoch 15/50:  46%|██████████████                    ███████████████████████▋                                            | 319/693 [02:39<03:08,  1.98it/s, lossEpoch 15/50:  46%|██████████                    ███████████████████████████▊                                            | 320/693 [02:39<03:06,  2.00it/s, lossEpoch 15/50:  46%|█████████████████████████████████████▊                                            | 320/693 [02:39<03:06,  2.00it/s, lossEpoch 15/50:  46%|█████████████████████████████████████▉                                            | 321/693 [02:39<03:01,  2.05it/s, lossEpoch 15/50:  46%|█████████████████████████████████████▉                                            | 321/693 [02:40<03:01,  2.05it/s, lossEpoch 15/50:  46%|██████████████████████████████████████                                            | 322/693 [02:40<03:07,  1.97it/s, lossEpoch 15/50:  46%|██████████████████████████████████████                                            | 322/693 [02:40<03:07,  1.97it/s, lossEpoch 15/50:  47%|██████████████████████████████████████▏                                           | 323/693 [02:40<03:06,  1.99it/s, lossEpoch 15/50:  47%|██████████████████████████████████████▏                                           | 323/693 [02:41<03:06,  1.99it/s, lossEpoch 15/50:  47%|██████████████████████████████████████▎                                           | Epoch 15/50:  47%|██████████████████████████████████████▉                                           | 329/693 [02:43<03:06,  1.95it/s, loss=Epoch 15/50:  48%|███████████████████████████████████████▏Epoch 15/50:  48%|███████████████████████████████████████▏                                          | 331/693 [02:45<03:04,  1.96it/s, loss=0.0386Epoch 15/50:  48%|███████████████████████████████████████▎                                          | 332/693 [02:45<03:00,  2.00it/s, loss=0.0386Epoch 15/50:  48%|███████████████████████████████████████▎                                          | 332/693 [02:45<03:00,  2.00it/s, loss=0.0131Epoch 15/50:  48%|███████████████████████████████████████▍                   Epoch 15/50:  48%|███████████████████████████████████████▍                                          | 333/693 [02:46<03:05,  1.94it/s, loss=0.0Epoch 15/50:  48%|███████████████████████████████████████▌                Epoch 15/50:  48%|███████████████████████████████████████▌                                          | 334/693 [02:46<03:02,  1.96it/s, loss=Epoch 15/50:  48%|███████████████████████████████████████▋                                          | 335/693 [02:46<03:03,  1.95it/s, loss=Epoch 15/50:  48%|███████████████████████████████████████▋                                          | 335/693 [02:47<03:03,  1.95it/s, loss=Epoch 15/50:  48%|███████████████████████████████████████▊             Epoch 15/50:  48%|███████████████████████████████████████▊                                          | 336/693 [02:47<03:05,  1.93it/s, loEpoch 15/50:  49%|███████████████████████████████████████▉                                 Epoch 15/50:  49%|███████████████████████████████████████▉                                          | 337/693 [02:48<03:08,  1.89it/s, Epoch 15/50:  49%|██████████████Epoch 15/50:  50%|████████████████████████████████████████▋                                       Epoch 15/50: 100%|██████████████████████████████████████████████████████████████████████████████████| 693/693 [05:38<00:00,  2.05it/s, loss=0.0039]
+Epoch 15: loss=0.030476 - val_loss=0.058257
+Epoch 15: val_loss improved from 0.06071323653416974 to 0.058257, saving model weights...
+Epoch 16/50: 100%|█████████████████████████████████████████████████████████████████████████████████████████| 693/693 [05:33<00:00,  2.08it/s, loss=0.0241]
+Epoch 16: loss=0.030635 - val_loss=0.058254
+Epoch 16: val_loss improved from 0.058256939356880526 to 0.058254, saving model weights...
+Epoch 17/50: 100%|█████████████████████████████████████████████████████████████████████████████████████████| 693/693 [05:33<00:00,  2.08it/s, loss=0.0950]
+Epoch 17: loss=0.029330 - val_loss=0.049212
+Epoch 17: val_loss improved from 0.058254476971924304 to 0.049212, saving model weights...
+0.0127]
+Epoch 21: loss=0.024841 - val_loss=0.063674
+Epoch 22/50: 100%|█████████████████████████████████████████████████████████████████████████████████████████| 693/693 [05:34<00:00,  2.07it/s, loss=0.0000]     
+Epoch 22: loss=0.021889 - val_loss=0.057813
+Epoch 23/50: 100%|█████████████████████████████████████████████████████████████████████████████████████████|00.0120.0120.00.0.0.00.0.0120.0127]
+Epoch 21: loss=0.024841 - val_loss=0.063674
+Epoch 22/50: 100%|█████████████████████████████████████████████████████████████████████████████████████████| 693/693 [05:34<00:00,  2.07it/s, loss=0.0000]
+Epoch 22: loss=0.021889 - val_loss=0.057813
+Epoch 23/50: 100%|█████████████████████████████████████████████████████████████████████████████████████████| 693/693 [05:34<00:00,  2.07it/s, loss=0.0342]
+Epoch 23: loss=0.020752 - val_loss=0.052433
+Epoch 24/50: 100%|█████████████████████████████████████████████████████████████████████████████████████████| 693/693 [05:34<00:00,  2.07it/s, loss=0.0481]
+Epoch 24: loss=0.020214 - val_loss=0.050770
+Epoch 25/50: 100%|█████████████████████████████████████████████████████████████████████████████████████████| 693/693 [05:34<00:00,  2.07it/s, loss=0.0188]
+Epoch 25: loss=0.019804 - val_loss=0.056885
+Epoch 26/50: 100%|█████████████████████████████████████████████████████████████████████████████████████████| 693/693 [05:34<00:00,  2.07it/s, loss=0.0000]
+Epoch 26: loss=0.019013 - val_loss=0.051126
+Epoch 27/50: 100%|█████████████████████████████████████████████████████████████████████████████████████████| 693/693 [05:34<00:00,  2.07it/s, loss=0.0114]
+Epoch 27: loss=0.019346 - val_loss=0.058319
+Early stopping triggered after 10 epochs with no improvement.
+Saved patch encoder weights to ./trained_model/patch_encoder_best.pt
+
+
+
+
+

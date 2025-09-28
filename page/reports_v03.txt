@@ -1,0 +1,40 @@
+
+============================= Based on V_03 : 140 trained patch encoder =========
+
+================================ 215-230 Evaluation for getting best threshold : Sampled 200 page pairs (positives=100, negatives=100)=========
+
+
+cuda
+215
+216
+217
+218
+219
+220
+221
+222
+223
+224
+225
+226
+225
+226
+227
+228
+229
+230
+Sampled 200 page pairs (positives=100, negatives=100)
+
+Embedding & scoring pages: 100%|█████████████████████████████████████████████████████████████████████████████████████████████████| 200/200 [39:59<00:00, 12.00s/pair] 
+Threshold sweep: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████| 4000/4000 [00:06<00:00, 627.70th/s] 
+
+--- Page-level intersections ---
+PR=RC threshold ≈ 0.081000 | PR=RC value ≈ 0.8400
+EER threshold   ≈ 0.081000 | error rate ≈ 0.1600
+
+
+--- Page-level metrics @ PR=RC ---
+Threshold: 0.081000
+Accuracy: 0.8400 | Precision: 0.8400 | Recall: 0.8400 | F1: 0.8400 | AUC: 0.9395
+TP: 84, TN: 84, FP: 16, FN: 16
+FPR: 0.1600 | FNR: 0.1600                                     

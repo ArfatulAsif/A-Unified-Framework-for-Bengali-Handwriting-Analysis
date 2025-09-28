@@ -1,0 +1,155 @@
+
+=========================================
+================= 141 to 150 for testing ===========
+========================================
+
+
+
+
+--- Evaluation (./Test) ---
+Best threshold: 0.3900 | Accuracy: 0.8250
+TP: 88, TN: 77, FP: 23, FN: 12
+Precision: 0.7928 | Recall: 0.8800 | F1: 0.8341 | AUC: 0.8637
+FPR: 0.2300 | FNR: 0.1200
+(pt-gpu) PS C:\Users\redwa\OneDrive\Desktop\Model\Version_02> python -m modeling.evaluate
+[INFO] Scanning dataset root: C:\Users\redwa\OneDrive\Desktop\Model\Version_02\data\Test
+  [OK] Writer 141: 48 images
+  [OK] Writer 142: 36 images
+  [OK] Writer 143: 32 images
+  [OK] Writer 144: 51 images
+  [OK] Writer 145: 45 images
+  [OK] Writer 146: 25 images
+  [OK] Writer 147: 40 images
+  [OK] Writer 148: 64 images
+  [OK] Writer 149: 61 images
+  [OK] Writer 150: 71 images
+[DONE] Found 10 writers under data\Test
+Loaded patch encoder weights.
+Sampled 200 pairs (positives=100, negatives=100)
+Scoring 200 pairs from ./Test ...
+100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 200/200 [00:05<00:00, 35.61it/s] 
+
+--- Evaluation (./Test) ---
+Best threshold: 0.3900 | Accuracy: 0.8250
+TP: 88, TN: 77, FP: 23, FN: 12
+Precision: 0.7928 | Recall: 0.8800 | F1: 0.8341 | AUC: 0.8637
+FPR: 0.2300 | FNR: 0.1200
+(pt-gpu) PS C:\Users\redwa\OneDrive\Desktop\Model\Version_02> python -m modeling.evaluate
+[INFO] Scanning dataset root: C:\Users\redwa\OneDrive\Desktop\Model\Version_02\data\Test
+  [OK] Writer 141: 48 images
+  [OK] Writer 142: 36 images
+  [OK] Writer 143: 32 images
+  [OK] Writer 144: 51 images
+  [OK] Writer 145: 45 images
+  [OK] Writer 146: 25 images
+  [OK] Writer 147: 40 images
+  [OK] Writer 148: 64 images
+  [OK] Writer 149: 61 images
+  [OK] Writer 150: 71 images
+[DONE] Found 10 writers under data\Test
+Loaded patch encoder weights.
+Sampled 1000 pairs (positives=500, negatives=500)
+Scoring 1000 pairs from ./Test ...
+100%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 1000/1000 [00:27<00:00, 36.11it/s] 
+
+--- Evaluation (./Test) ---
+Best threshold: 0.4500 | Accuracy: 0.7830
+TP: 448, TN: 335, FP: 165, FN: 52
+Precision: 0.7308 | Recall: 0.8960 | F1: 0.8050 | AUC: 0.8554
+FPR: 0.3300 | FNR: 0.1040
+(pt-gpu) PS C:\Users\redwa\OneDrive\Desktop\Model\Version_02> python -m modeling.evaluate
+[INFO] Scanning dataset root: C:\Users\redwa\OneDrive\Desktop\Model\Version_02\data\Test
+  [OK] Writer 141: 48 images
+  [OK] Writer 142: 36 images
+  [OK] Writer 143: 32 images
+  [OK] Writer 144: 51 images
+  [OK] Writer 145: 45 images
+  [OK] Writer 146: 25 images
+  [OK] Writer 147: 40 images
+  [OK] Writer 148: 64 images
+  [OK] Writer 149: 61 images
+  [OK] Writer 150: 71 images
+[DONE] Found 10 writers under data\Test
+Loaded patch encoder weights.
+Sampled 400 pairs (positives=200, negatives=200)
+Scoring 400 pairs from ./Test ...
+100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 400/400 [00:11<00:00, 36.14it/s] 
+
+--- Evaluation (./Test) ---
+Best threshold: 0.4500 | Accuracy: 0.8025
+TP: 180, TN: 141, FP: 59, FN: 20
+Precision: 0.7531 | Recall: 0.9000 | F1: 0.8200 | AUC: 0.8655
+FPR: 0.2950 | FNR: 0.1000
+[INFO] Scanning dataset root: C:\Users\redwa\OneDrive\Desktop\Model\Version_02\data\Test
+[INFO] Scanning dataset root: C:\Users\redwa\OneDrive\Desktop\Model\Version_02\data\Test
+[INFO] Scanning dataset root: C:\Users\redwa\OneDrive\Desktop\Model\Version_02\data\Test
+[INFO] Scanning dataset root: C:\Users\redwa\OneDrive\Desktop\Model\Version_02\data\Test
+[INFO] Scanning dataset root: C:\Users\redwa\OneDrive\Desktop\Model\Version_02\data\Test
+  [OK] Writer 141: 48 images
+  [OK] Writer 142: 36 images
+  [OK] Writer 143: 32 images
+  [OK] Writer 144: 51 images
+  [OK] Writer 145: 45 images
+  [OK] Writer 146: 25 images
+  [OK] Writer 147: 40 images
+  [OK] Writer 148: 64 images
+  [OK] Writer 149: 61 images
+  [OK] Writer 150: 71 images
+[DONE] Found 10 writers under data\Test
+Loaded patch encoder weights.
+Sampled 400 pairs (positives=200, negatives=200)
+Scoring 400 pairs from ./Test ...
+100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 400/400 [00:11<00:00, 36.15it/s]
+
+--- Evaluation (./Test) ---
+Best threshold: 0.4500 | Accuracy: 0.8025
+TP: 180, TN: 141, FP: 59, FN: 20
+Precision: 0.7531 | Recall: 0.9000 | F1: 0.8200 | AUC: 0.8655
+FPR: 0.2950 | FNR: 0.1000
+
+
+
+
+
+
+
+
+
+
+
+=========================================
+================= 215 to 230 for testing =========== Pos : 1000 and Neg : 1000 =======
+========================================
+
+[INFO] Scanning dataset root: C:\Users\redwa\OneDrive\Desktop\Model\Version_02\data\Test
+  [OK] Writer 215: 85 images
+  [OK] Writer 216: 90 images
+  [OK] Writer 217: 48 images
+  [OK] Writer 218: 47 images
+  [OK] Writer 219: 114 images
+  [OK] Writer 220: 72 images
+  [OK] Writer 221: 216 images
+  [OK] Writer 222: 62 images
+  [OK] Writer 223: 61 images
+  [OK] Writer 224: 226 images
+  [OK] Writer 225: 120 images
+  [OK] Writer 226: 152 images
+  [OK] Writer 227: 212 images
+  [OK] Writer 228: 131 images
+  [OK] Writer 229: 376 images
+  [OK] Writer 230: 219 images
+[DONE] Found 16 writers under data\Test
+Loaded patch encoder weights.
+Sampled 2000 pairs (positives=1000, negatives=1000)
+Scoring 2000 pairs from ./Test ...
+100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 2000/2000 [01:49<00:00, 18.19it/s] 
+
+--- Intersections from the graph (robust) ---
+Precision = Recall at threshold ≈ 0.397667 | value ≈ 0.8515
+EER (FPR = FNR) at threshold ≈ 0.397667 | error rate ≈ 0.1485
+
+--- Evaluation @ PR=RC threshold ---
+Chosen threshold: 0.397667
+Accuracy: 0.8515 | Precision: 0.8511 | Recall: 0.8520 | F1: 0.8516 | AUC: 0.9314
+TP: 852, TN: 851, FP: 149, FN: 148
+FPR (FAR): 0.1490 | FNR (FRR): 0.1480

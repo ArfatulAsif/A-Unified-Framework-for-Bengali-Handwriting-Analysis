@@ -1,0 +1,23 @@
+======================= 214 training ======= + tuning best threshold (215-230) ====== evaluate (231-237) ====
+
+
+
+
+
+
+======= evaluate on 231 - 237 =============
+===========================================
+
+
+Found 73 total pages across 7 writers.
+Embedding pages (this uses page.segment_lines internally)...
+Embedding pages: 100%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████| 73/73 [13:38<00:00, 11.21s/page] 
+Page pool size (embedded): 73
+Running 20 retrieval trials...
+Retrieval trials: 100%|█████████████████████████████████████████████████████████████████████████████████████████████████████████| 20/20 [00:00<00:00, 2290.22trial/s] 
+
+--- Retrieval Evaluation (page-level) ---
+Trials: 20 | Pool size: 73 | Threshold: 0.277500 | Metric: cosine
+Accuracy: 0.9521 | Precision: 0.8237 | Recall: 0.9610 | F1: 0.8871 | AUC: 0.9927
+TP: 271, TN: 1100, FP: 58, FN: 11
+FPR: 0.0501 | FNR: 0.0390
