@@ -1,7 +1,11 @@
 # Global configuration for the Writer Verification project (PyTorch-only).
 # Expected data layout:
-#   ./data/Train/<writer_id>/<doc_id>/*.jpg
-#   ./data/Test/<writer_id>/<doc_id>/*.jpg
+#   ./data/Train/<writer_id>/<doc_id>/*.jpg       --- line dataset
+#   ./data/Test/<writer_id>/<doc_id>/*.jpg        --- line dataset
+#   ./data/Evaluate_For_Pages/<writer_id>/*.jpg   --- page dataset
+#   ./data/Test_For_Pages/<writer_id>/*.jpg       --- page dataset
+
+
 
 paths:
   train_dir: "./data/Train"             # Path to the root folder for training data.
@@ -104,7 +108,7 @@ clustering_tuning:
 
 
 clustering:
-  eps:  0.080000           # it should be equal to evaluation_page default_threshold
+  eps:  0.080000              # best eps from tuning the clustering algorithm
                               # it represents how close two pages must be to be considered neighbors, in terms of cosine distance
   
   min_samples : 2             # minimum number pages to for a a writer cluster
