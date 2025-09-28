@@ -6,6 +6,20 @@
 This project verifies whether two handwriting **lines** come from the **same writer**.
 It uses a robust preprocessing pipeline + content-aware **patch pooling** and learns a writer-style embedding with a **triplet loss**.
 
+
+# Writer Verification (Page-level, Line Pooling)
+
+This project further verifies whether two handwriting **pages** come from the **same writer**.
+It first extract **Lines** from a page using **easyocr**, then do **line embeddings** of these lines, then do **mean pooling** of these lines, that represents **page level embeddings**. 
+
+Then the model compares two page level embeddings and finds cosine distance to determine whether they are of the same writer or different.
+
+
+
+# Folder Order
+
+
+
 ## Dataset Layout (explicit)
 
 ```
