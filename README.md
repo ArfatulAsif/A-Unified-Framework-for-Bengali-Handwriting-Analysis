@@ -85,6 +85,8 @@ You will need anaconda to install all deep learning packages
 
  - [Download cuDNN](https://developer.nvidia.com/rdp/cudnn-archive)
 
+Copy cuDNN libraries into CUDA libraries.
+
 ##### Step 6: Install PyTorch 
 
  - [Install PyTorch](https://pytorch.org/get-started/locally/)
