@@ -179,10 +179,15 @@ python -m preprocessor.view_preprocessor --file ./data/Train/1/1_1/1_1_3.jpg --s
 
 <br>
 
+**Preprocessing Line:**
+
+<br>
+
 <img src="images/Visualize preprocessing.png">
 
 <br>
 
+**Extract Patches:**
 
 <img src="images/Visualize preprocessing_patches.png">
 
