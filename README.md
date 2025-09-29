@@ -3,16 +3,26 @@
 
 ## Writer Verification (Line-level, Patch Pooling)
 
-This project verifies whether two handwriting **lines** come from the **same writer**.
+This system verifies whether two handwriting **lines** come from the **same writer**.
 It uses a robust preprocessing pipeline + content-aware **patch pooling** and learns a writer-style embedding with a **triplet loss**.
 
 
 ## Writer Verification (Page-level, Line Pooling)
 
-This project further verifies whether two handwriting **pages** come from the **same writer**.
+This system further verifies whether two handwriting **pages** come from the **same writer**.
 It first extract **Lines** from a page using **easyocr**, then do **line embeddings** of these lines, then do **mean pooling** of these lines, that represents **page level embeddings**. 
 
 Then the model compares two page level embeddings and finds cosine distance to determine whether they are of the same writer or different.
+
+
+## Page document Retrieval based on writers handwriting:
+
+Given reference a writer's handwritings and a document pool(containing many pages of handwritings of many different writers, including reference writer), this system can extract all the handwriting documents of the reference writer and store them to desired path
+
+
+## Document Clustering based on writers:
+
+Given a document pool (containing many pages of handwritings of many different writers), this system can cluster documents based on handwriting, where same handwritings are stored in the same cluster. Also number of writers are not needed, this system automatically finds it. 
 
 
 
