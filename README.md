@@ -396,7 +396,7 @@ We trained the writer‐verification model on a reduced cohort of 140 writers wi
 
 
 
-We trained the writer-verification model on a larger cohort of **215 writers** for training plus validation, and evaluated on **15 held-out writers**, all of which are disjoint like before. Validation loss dropped rapidly in the first epochs **0.1583 → 0.1088 → 0.0875 → 0.0830 → 0.0781** by epoch 5, then improved steadily to a best **val_loss ≈ 0.04449** at **epoch 35**. Subsequent epochs fluctuated around **0.044–0.051** without surpassing the minimum; early stopping triggered after 10 epochs with no improvement, and the best checkpoint (epoch 35) was retained, with weights saved for downstream evaluation. 
+We trained the writer-verification model on a larger cohort of **215 writers** for training plus validation, and evaluated on **15 held-out writers**, all of which are disjoint like before. Validation loss dropped rapidly in the first epochs **0.1583 → 0.1088 → 0.0875 → 0.0830 → 0.0781** by epoch 5, then improved steadily to a best **val_loss ≈ 0.04449** at **epoch 35**. Subsequent epochs fluctuated around **0.044–0.051** without surpassing the minimum; early stopping triggered after 10 epochs with no improvement, and the best checkpoint (epoch 35) was retained, with weights saved for downstream evaluation. Per epoch took around 10 minutes.
 
 <br>
 
@@ -509,9 +509,15 @@ Each line is preprocessed and split into K informative patches. A **shared Line 
 # 7. page
 
 
-### segment_lines 
+### segment_lines : `segment_lines.py`
 
 
+<img src="images/segment_lines.png">
+
+
+We first binarize the page and clean the text mask, then derive **line evidence** via a smoothed horizontal projection to locate valley regions that likely separate lines. A key step is an **adaptive tolerance method** that adjusts the split criterion **per row** using **local gap width and stroke thickness**. This lets the separator **bend along low ink paths**, tolerate brief touching from ascenders and descenders, and **follow non straight baselines**. After tracing curved separators, bands are grown and repaired to produce stable line crops while avoiding over and under segmentation.
+
+<br>
 
 
 ### `show_lines_segmentation.py`
@@ -521,8 +527,97 @@ Each line is preprocessed and split into K informative patches. A **shared Line 
 python -m page.show_lines_segmentation  ./path/to/page/image.jpg
 ```
 
-<img src="images/Line_segmentation.png" width="40%">   <img src="images/segmented_lines.png" width="40%">
+<img src="images/Line_segmentation.png" width="45%">   <img src="images/segmented_lines.png" width="45%">
 
 
 
+
+### Page Embedding : `page_embeding.py`
+
+<br>
+
+<img src="images/page_embedding.png">
+
+<br>
+
+
+The page image is binarized and lightly cleaned, then lines are segmented; each line is patched and encoded by the shared Line Encoder to produce line embeddings. These are aggregated across the page via a simple pooling step and L2 normalized to form a single page embedding. This hierarchical design preserves local stroke cues at the line level while yielding a compact, page level representation suitable for retrieval or verification.
+
+
+
+### Evaluate Page Comparison : `evaluate.py`
+
+```bash
+python -m page.evaluate
+```
+
+<img src="images/page_evaluate.png">
+
+The evaluator loads test writers and a fixed set of positive and negative pairs, runs the trained encoders to produce embeddings, and scores each pair via **cosine distance**. It then **sweeps thresholds** and selects the **precision equals recall** point as a balanced operating threshold. Final **metrics Accuracy Precision Recall F1 AUC and EER** are computed at this threshold and reported.
+
+
+### Evaluation Reports
+
+
+**Evaluated using fewer dataset trained patch_encoder**
+
+
+| Item                  |              Value | Item                       |                      Value |
+| --------------------- | -----------------: | -------------------------- | -------------------------: |
+| Writers evaluated     |                 16 | Pairs sampled              |                        200 |
+| Positives same-writer |                100 | Negatives different-writer |                        100 |
+| Threshold selection   | Precision = Recall | Chosen threshold           |               **0.081000** |
+| Accuracy              |         **0.8400** | AUC                        |                 **0.9395** |
+| Precision             |             0.8400 | Recall                     |                     0.8400 |
+| F1                    |             0.8400 | EER  FPR = FNR             | **0.1600** at **0.081000** |
+| TP                    |                 84 | TN                         |                         84 |
+| FP                    |                 16 | FN                         |                         16 |
+| FPR  FAR              |             0.1600 | FNR  FRR                   |                     0.1600 |
+---
+
+<br>
+
+<img src="page/evaluation_graph_03_ 140 training 100 pos 100 neg.png">
+
+On a balanced 200 page-pair test, selecting the PR = RC operating point yields 84.0% accuracy with a symmetric error profile FPR = FNR = 0.160. The AUC = 0.9395 indicates strong separability, and the threshold 0.0810 provides a clear, balanced decision point. We use balanced pairs so precision and recall are directly comparable and not skewed by class priors, and we choose PR = RC to enforce a balanced operating point with equal emphasis on false accepts and false rejects.
+
+
+**Evaluated using larger dataset trained patch_encoder**
+
+| Item                  |              Value | Item                       |                      Value |
+| --------------------- | -----------------: | -------------------------- | -------------------------: |
+| Writers evaluated     |                 16 | Pairs sampled              |                        200 |
+| Positives same-writer |                100 | Negatives different-writer |                        100 |
+| Threshold selection   | Precision = Recall | Chosen threshold           |               **0.277500** |
+| Accuracy              |         **0.9700** | AUC                        |                 **0.9941** |
+| Precision             |             0.9700 | Recall                     |                     0.9700 |
+| F1                    |             0.9700 | EER  FPR = FNR             | **0.0300** at **0.277500** |
+| TP                    |                 97 | TN                         |                         97 |
+| FP                    |                  3 | FN                         |                          3 |
+| FPR  FAR              |             0.0300 | FNR  FRR                   |                     0.0300 |
+---
+
+<br>
+
+<img src="page/evaluation_graph_04 214 training 100 pos 100 neg (215-230 for testing).png">
+
+On a balanced **200 page-pair** test, selecting the **PR = RC** operating point yields **97.0%** accuracy with a **symmetric error profile** **FPR = FNR = 0.030** and an excellent **AUC = 0.9941**, indicating near-perfect separability of page embeddings. We keep **positives = negatives** so precision and recall are directly comparable and not skewed by class priors; the **PR = RC** threshold is chosen to enforce a **balanced operating point** that weights false accepts and false rejects equally.
+
+
+
+
+### Page comparison : `predict.py`
+
+```bash
+python -m page.predict ./path/to/image1.jpg ./path/to/image2.jpg
+```
+
+<br>
+
+<img src="images/predict_page.png">
+
+The script takes two inputs **line or page**, applies the same **preprocessing** used in training, and obtains embeddings via the **shared Line Encoder**. For **lines**, it extracts informative patches and mean-pools; for **pages**, it first **segments lines**, embeds each line, then aggregates to a **page embedding**. It computes **cosine distance** between the two embeddings and compares it to a provided **threshold** to output **same writer** or **different writer**, along with the distance. This mirrors the training geometry, ensuring the decision is made in the same embedding space used to learn writer identity.
+
+
+---
 
