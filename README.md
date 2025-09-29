@@ -135,8 +135,19 @@ pip install -r requirements.txt
 You can customize dataset and use datatype: ".jpg", ".jpeg", ".png", ".bmp", ".tif", ".tiff" .
 
 
-### `dataset.py` : ...... writing start here
+### `dataset.py` : 
 
+<br>
+
+<img src="images/datasetpy.png">
+
+<br>
+
+1. `index_writer_images` function indexes lines by writers.
+
+2. `split_writers` function splits Train data to train and validation set. (80%, 20%). Here train and validation set wrtiers are completely disjoint.
+
+3. `sample_two_distinct` function takes items as input and retuns random two items. 
 
 
 
