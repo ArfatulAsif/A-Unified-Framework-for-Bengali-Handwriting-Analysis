@@ -107,6 +107,8 @@ python -m modeling.gpu
 
 **python 3.9.13**
 
+**PyTorch stable (2.8.0)**
+
 
 
 ### Install
@@ -320,24 +322,6 @@ sweeps a threshold, and prints Accuracy, Precision/Recall/F1, FAR/FRR, and AUC. 
 
 
 
-
-## Predict on Two Lines
-
-```bash
-python -m use_model.predict --config config.yml --img_a ./data/Test/26/26_2/26_2_1.jpg --img_b ./data/Test/27/27_1/27_1_2.jpg
-```
-
-Outputs cosine distance and a decision using the threshold from `config.yml`.
+## 4. Reports 
 
 
-
-## Notes
-- Preprocessing is in `preprocessor/pipeline.py`.
-- Model definitions live in `modeling/model_defs.py`.
-
-
-
-
----
----
----
