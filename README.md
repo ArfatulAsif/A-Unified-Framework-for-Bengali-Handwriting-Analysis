@@ -263,7 +263,7 @@ python -m preprocessor.view_preprocessor --file ./data/Train/1/1_1/1_1_3.jpg --s
 
 
 
-### Model Architecture
+### Model Architecture : `model_defs.py`
 
 
 **Patch Encoder (CNN)**
@@ -281,18 +281,26 @@ python -m preprocessor.view_preprocessor --file ./data/Train/1/1_1/1_1_3.jpg --s
 
 
 
+### Training : `train.py`
+
+
+<img src="images/training.png">
+
+<br>
 
 
 
-
-
-
+**Start training**
 
 ```bash
 python -m modeling.train
 ```
-- Uses `./Train` and splits writers into train/val (unless you specify `paths.val_dir`).
+
 - Saves weights into `./trained_model`.
+
+In the console you will see epochs and progress of training.
+
+
 
 # Evaluate (on explicit `./Test`)
 
