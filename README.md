@@ -121,6 +121,8 @@ pip install -r requirements.txt
 ---
 
 
+<br>
+<br>
 
 # 1. data
 
@@ -179,6 +181,8 @@ You can customize dataset and use datatype: ".jpg", ".jpeg", ".png", ".bmp", ".t
 The role of this pipeline is to properly index dataset (lines) by writers from the directory. Split writers into train + validation set. 
 
 
+<br>
+<br>
 
 # 2. preprocessing 
 
@@ -260,6 +264,8 @@ python -m preprocessor.view_preprocessor --file ./data/Train/1/1_1/1_1_3.jpg --s
 
 
 
+<br>
+<br>
 
 # 3. modeling
 
