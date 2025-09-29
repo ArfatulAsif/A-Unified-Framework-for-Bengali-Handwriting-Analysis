@@ -320,6 +320,49 @@ This builds same-writer pairs and balanced different-writer pairs, computes dist
 sweeps a threshold, and prints Accuracy, Precision/Recall/F1, FAR/FRR, and AUC. Also plots graph ((acc, precision, recall, f1, AUC, FPR, FNR)  vs threshold)
 
 
+<br>
+<br>
+
+
+
+### `model_defs.py` — model architecture
+
+-   **Patch Encoder**: compact CNN over single-channel patches → conv plus relu blocks with max-pool → flatten → dropout → dense → **L2-normalized patch embedding**.
+    
+-   **Line Encoder**: applies the Patch Encoder to **K** patches from a line → **mean-pools** the K embeddings → **L2-normalizes** to get the **line embedding**.
+    
+-   **Triplet Siamese**: three **shared** Line Encoder branches for **anchor positive negative** → **triplet loss** with margin trains the embedding space.
+    
+
+
+### `train.py` — training
+
+-   **Triplet batch generator**:
+    
+    -   Preprocess each line, **extract content-aware patches**, then **force exactly K patches per line** by sampling or repeating so every line has the same coverage.
+        
+    -   Each batch forms **anchor and positive from the same writer** and a **negative from a different writer**; returns arrays shaped **batch by K by patch by patch by 1**.
+        
+-   **Loop**: loads config and seeds, indexes training images by writer, iterates batches, runs forward and backprop, updates optimizer and scheduler, validates, early-stops, and **saves the best weights** for deployment.
+    
+
+
+### `evaluate.py` — evaluation
+
+-   **Embed lines**: for each line, **preprocess → extract content patches → Patch Encoder → mean-pool → L2-normalize** to a single line embedding.
+    
+-   **Score pairs**: sample **same-writer** and **different-writer** pairs, compute **cosine distance** per pair, and create a **threshold grid** to sweep metrics.
+    
+-   **Find operating point**: sweep once to collect **accuracy precision recall F1 FPR FNR** across thresholds, then compute two intersections via robust polyline intersection:
+    
+    -   **Precision equals Recall** → used as the **chosen threshold** for balanced operation.
+        
+    -   **FPR equals FNR** → **EER** reported as a reference.
+        
+-   **Report**: evaluate at the **PR equals RC** threshold and print **Accuracy Precision Recall F1 AUC** plus **TP TN FP FN FPR FNR**, and plot the sweep with both intersections marked.
+
+<br>
+<br>
 
 
 ## 4. Reports 
