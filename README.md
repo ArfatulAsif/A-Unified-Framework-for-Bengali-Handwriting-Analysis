@@ -137,6 +137,26 @@ pip install -r requirements.txt
 You can customize dataset and use datatype: ".jpg", ".jpeg", ".png", ".bmp", ".tif", ".tiff" .
 
 
+### Dataset split:
+
+<br>
+
+**Training with fewer dataset (140 training + validation)**
+
+<img src="images/dataset-splitting-complete-validate-140.png">
+
+<br>
+
+<br>
+
+**Training with fewer dataset (214 training + validation)**
+
+<img src="images/dataset-splitting-complete-validate-214.png">
+
+<br>
+
+
+
 ### `dataset.py` : 
 
 <br>
@@ -192,6 +212,9 @@ python -m preprocessor.view_preprocessor --file ./data/Train/1/1_1/1_1_3.jpg --s
 <img src="images/Visualize preprocessing_patches.png">
 
 <br>
+
+
+
 
 
 # Train
