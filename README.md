@@ -149,7 +149,7 @@ You can customize dataset and use datatype: ".jpg", ".jpeg", ".png", ".bmp", ".t
 
 <br>
 
-**Training with fewer dataset (214 training + validation)**
+**Training with larger dataset (214 training + validation)**
 
 <img src="images/dataset-splitting-complete-validate-214.png">
 
