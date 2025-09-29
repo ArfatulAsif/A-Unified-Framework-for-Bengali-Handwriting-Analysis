@@ -485,9 +485,23 @@ We saved trained models and best check points during epochs.
 
 
 
-# line_comparison
+# 6. line_comparison
 
 
+```bash
+python -m use_model.predict --config config.yml --img_a ./path/to/img1.jpg --img_b ./path/to/img2.jpg
+```
+
+
+
+<br>
+
+<img src="images/line_comparison.png">
+
+<br>
+
+
+Each line is preprocessed and split into K informative patches. A **shared Line Encoder** embeds each line by applying the trained Patch Encoder to its patches, mean-pooling, then L2-normalizing. We compute the **cosine distance** between the two line embeddings and compare it to a **threshold**: distance below threshold → **same writer**; above → **different writer**.
 
 
 
