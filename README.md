@@ -371,7 +371,7 @@ sweeps a threshold, and prints Accuracy, Precision/Recall/F1, FAR/FRR, and AUC. 
 <br>
 
 
-# 4. Reports 
+# 4. reports 
 
 
 ### Training Configuration:
@@ -467,5 +467,27 @@ With a balanced set of 1000 positive and 1000 negative pairs, the PR = RC operat
 On a balanced 2000-pair test set, the PR=RC operating point yields 90.10% accuracy with a symmetric error profile FPR ≈ FNR ≈ 0.099. The AUC = 0.9656 indicates excellent separability, and the threshold 0.4940 provides a clear, balanced setting for verification.
 
 <br>
+<br>
+
+
+# 5. trained_model
+
+We saved trained models and best check points during epochs.
+
+`patch_encoder_best_v03.pt` is trained model on 140 writers.
+
+`patch_encoder_best_v04.pt` is trained model on 214 writers.
+
+
+<br>
+<br>
+
+
+
+
+# line_comparison
+
+
+
 
 
