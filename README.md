@@ -374,3 +374,98 @@ sweeps a threshold, and prints Accuracy, Precision/Recall/F1, FAR/FRR, and AUC. 
 # 4. Reports 
 
 
+### Training Configuration:
+
+
+After extensive ablation across **stride**, **minimum foreground**, **canvas placement**, **learning rate**, **batch size**, **embedding dimension**, **triplet margin**, and **K patches per line**, we fixed the configuration that yielded the best validation performance: **patch size 128**, **stride 56**, **min foreground 0.04**, **random** canvas placement during training and **centered** placement for evaluation, **no** illumination correction and **no** CLAHE; optimization with **Adam** at **1e-4** learning rate, **batch size 16**, **embedding dimension 512**, **triplet margin 0.3**, and **K = 8** patches per line, trained for up to **50 epochs** with **early-stopping patience 10**.
+
+
+
+### Training with Fewer dataset
+
+We trained the writer‐verification model on a reduced cohort of 140 writers with a writer-disjoint validation split, reserving a separate set of 10 writers for testing.  Per epoch took around 5 minute 40 seconds. Training loss steadily decreased, and the validation loss improved multiple times early on, reaching its best value at epoch 17 (val_loss ≈ 0.0492); subsequent epochs fluctuated around 0.05–0.06 without surpassing this minimum. Early stopping was triggered after 10 epochs with no validation improvement, and the best checkpoint (epoch 17) was retained, with the final patch-encoder weights saved. 
+
+<br>
+
+<img src="reports/epochs_03_convergence - 140 training.png">
+
+<br>
+
+
+### Training on Larger dataset:
+
+
+
+We trained the writer-verification model on a larger cohort of **215 writers** for training plus validation, and evaluated on **15 held-out writers**, all of which are disjoint like before. Validation loss dropped rapidly in the first epochs **0.1583 → 0.1088 → 0.0875 → 0.0830 → 0.0781** by epoch 5, then improved steadily to a best **val_loss ≈ 0.04449** at **epoch 35**. Subsequent epochs fluctuated around **0.044–0.051** without surpassing the minimum; early stopping triggered after 10 epochs with no improvement, and the best checkpoint (epoch 35) was retained, with weights saved for downstream evaluation. 
+
+<br>
+
+<img src="reports/epochs_04_convergence - 214 training.png">
+
+<br>
+
+
+
+
+### Evaluation Configuration:
+
+Positive sample = same writer pair, Negative sample = different writer pair.
+We observe that changing the **positive sample to negative sample ratio** in evaluation shifts the **precision–recall trade-off** substantially: more positives tend to raise recall and lower precision, while more negatives do the opposite. In contrast, **AUC** and even **overall accuracy** remain relatively **stable** across these ratio changes, indicating that the underlying score distributions are well separated and robust to class priors. To provide a **balanced evaluation**, we therefore fixed the test composition to **positives = negatives**. Finally, to select a **balanced operating threshold**, we chose the point where **precision equals recall**; this yields symmetric error tendencies and a single interpretable decision point for verification.
+
+
+### Evaluation report on fewer dataset trained model
+
+<br>
+
+| Item                  |              Value | Item                       |                      Value |
+| --------------------- | -----------------: | -------------------------- | -------------------------: |
+| Writers evaluated     |                 16 | Pairs sampled              |                       2000 |
+| Positives same-writer |               1000 | Negatives different-writer |                       1000 |
+| Threshold selection   | Precision = Recall | Chosen threshold           |               **0.397667** |
+| Accuracy              |         **0.8515** | AUC                        |                 **0.9314** |
+| Precision             |             0.8511 | Recall                     |                     0.8520 |
+| F1                    |             0.8516 | EER  FPR = FNR             | **0.1485** at **0.397667** |
+| TP                    |                852 | TN                         |                        851 |
+| FP                    |                149 | FN                         |                        148 |
+| FPR  FAR              |             0.1490 | FNR  FRR                   |                     0.1480 |
+---
+
+<br>
+
+
+<img src="reports/evaluation_graph_03 - 140 training + (215 - 230) (1000 pos, 1000 neg).png">
+
+
+With a balanced set of 1000 positive and 1000 negative pairs, the PR = RC operating point yields 85.15% accuracy and a near-symmetric error profile FPR ≈ FNR ≈ 0.148. The high AUC = 0.9314 indicates strong separability of embeddings; the selected threshold 0.3977 provides an interpretable, balanced trade-off for verification.
+
+<br>
+
+
+
+### Evaluation report on larger dataset trained model
+
+<br>
+
+| Item                  |              Value | Item                       |                      Value |
+| --------------------- | -----------------: | -------------------------- | -------------------------: |
+| Writers evaluated     |                 16 | Pairs sampled              |                       2000 |
+| Positives same-writer |               1000 | Negatives different-writer |                       1000 |
+| Threshold selection   | Precision = Recall | Chosen threshold           |               **0.494000** |
+| Accuracy              |         **0.9010** | AUC                        |                 **0.9656** |
+| Precision             |             0.9010 | Recall                     |                     0.9010 |
+| F1                    |             0.9010 | EER  FPR = FNR             | **0.0990** at **0.494000** |
+| TP                    |                901 | TN                         |                        901 |
+| FP                    |                 99 | FN                         |                         99 |
+| FPR  FAR              |             0.0990 | FNR  FRR                   |                     0.0990 |
+---
+
+<br>
+
+<img src="reports/evaluation_graph_04 - 214 training + (215 - 230 testing) (1000 pos, 1000 neg).png">
+
+
+On a balanced 2000-pair test set, the PR=RC operating point yields 90.10% accuracy with a symmetric error profile FPR ≈ FNR ≈ 0.099. The AUC = 0.9656 indicates excellent separability, and the threshold 0.4940 provides a clear, balanced setting for verification.
+
+<br>
+
+

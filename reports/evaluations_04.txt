@@ -2,20 +2,6 @@
 
 
 
-Sampled 2000 pairs (positives=1000, negatives=1000)
-100%|██████████████████████████████████████████████████████████████████████████████████████████████| 2000/2000 [01:18<00:00, 25.34it/s] 
-
---- Intersections from the graph (robust) ---
-Precision = Recall at threshold ≈ 0.435000 | value ≈ 0.8865
-EER (FPR = FNR) at threshold ≈ 0.435000 | error rate ≈ 0.1135
-
---- Evaluation @ PR=RC threshold ---
-Chosen threshold: 0.435000
-Accuracy: 0.8865 | Precision: 0.8861 | Recall: 0.8870 | F1: 0.8866 | AUC: 0.9595
-TP: 887, TN: 886, FP: 114, FN: 113
-FPR (FAR): 0.1140 | FNR (FRR): 0.1130
-
-
 
 ===============================
 ================== Final ==========
