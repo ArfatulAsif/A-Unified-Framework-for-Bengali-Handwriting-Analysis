@@ -212,12 +212,81 @@ python -m preprocessor.view_preprocessor --file ./data/Train/1/1_1/1_1_3.jpg --s
 <img src="images/Visualize preprocessing_patches.png">
 
 <br>
+<br>
+
+#### Preprocess Line:
+
+1.  Convert the image to grayscale for uniform input.
+    
+2.  Optionally correct uneven lighting.
+    
+3.  Optionally enhance contrast for clearer strokes.
+    
+4.  Build a mask to separate text from background.
+    
+5.  Detect tight text boundaries to remove empty margins.
+    
+6.  Crop around text (or keep full image if none found).
+    
+7.  Resize to a standard height while keeping proportions.
+    
+8.  Place on a fixed-width canvas with recorded bounds.
+    
+9.  Normalize pixel values and ensure single channel.
+    
+10.  Record ink coverage and debug information.
+    
+11.  Output a clean, standardized line image.
+    
+
+
+#### Extract Patches (content-only):
+
+1.  Focus on the text region defined by bounds.
+    
+2.  Slide a fixed-size window across the text line.
+    
+3.  Pad at the right edge if the patch is too narrow.
+    
+4.  Keep patches with enough ink, discard empty ones.
+    
+5.  Stop when end of text or max patches reached.
+    
+6.  If no valid patches, take one centered fallback.
+    
+7.  Stack patches into a consistent batch for the model.
+
+
+
+
+## 3. modeling
+
+
+
+### Model Architecture
+
+
+**Patch Encoder (CNN)**
+
+<img src="images/Patch Encoder model architecture.png">
+
+<br>
+
+
+**Line Encoder + Triplet Siamese**
+
+<img src="images/line_encoder_triplet_siamese.png">
+
+<br>
 
 
 
 
 
-# Train
+
+
+
+
 
 ```bash
 python -m modeling.train

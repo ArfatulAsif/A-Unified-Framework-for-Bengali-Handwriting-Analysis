@@ -171,4 +171,4 @@ def build_triplet_siamese(line_encoder: nn.Module, embedding_dim=128, margin=0.2
         # Return the average loss over the entire batch.
         return loss.mean()
 
-    return model, triplet_loss
+    return model, triplet_loss 
