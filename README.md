@@ -302,14 +302,23 @@ In the console you will see epochs and progress of training.
 
 
 
-# Evaluate (on explicit `./Test`)
+### Evaluate : `evaluate.py`
+
+<img src="images/evaluate.png">
+
+<br>
+
+**Start evaluation:**
 
 ```bash
 python -m modeling.evaluate
 ```
 
 This builds same-writer pairs and balanced different-writer pairs, computes distances,
-sweeps a threshold, and prints Accuracy, Precision/Recall/F1, FAR/FRR, and AUC.
+sweeps a threshold, and prints Accuracy, Precision/Recall/F1, FAR/FRR, and AUC. Also plots graph ((acc, precision, recall, f1, AUC, FPR, FNR)  vs threshold)
+
+
+
 
 
 ## Predict on Two Lines
