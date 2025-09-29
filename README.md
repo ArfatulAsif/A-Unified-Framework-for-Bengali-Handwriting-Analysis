@@ -629,6 +629,7 @@ The script takes two inputs **line or page**, applies the same **preprocessing**
 
 (I will add this later, just keep in mind that retrieval was done using the found threshold from `page evaluation`)
 
+(include their evaluation report as well)
 
 # 9. Clustering: 
 
@@ -638,6 +639,10 @@ And the best `eps` and `min sample` was reported and stored.
 
 
 Using the stored clustering `eps` and `min sample`, evaluation was done on completely different (231-237) dataset as well as Different sourced dataset.
+
+
+(include their evaluation report as well)
+
 
 
 
