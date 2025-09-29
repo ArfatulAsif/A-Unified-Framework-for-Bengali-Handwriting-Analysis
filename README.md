@@ -45,7 +45,7 @@ Then the model compares two page level embeddings and finds cosine distance to d
 # All Pipelines:
 
 
-## 0. Setup environment
+# 0. Setup environment
 
 
 ### Create virtual envorntment
@@ -122,7 +122,7 @@ pip install -r requirements.txt
 
 
 
-## 1. data
+# 1. data
 
 
 ### Dataset folder structure
@@ -180,7 +180,7 @@ The role of this pipeline is to properly index dataset (lines) by writers from t
 
 
 
-## 2. preprocessing 
+# 2. preprocessing 
 
 
 ### `pipeline.py` 
@@ -261,7 +261,7 @@ python -m preprocessor.view_preprocessor --file ./data/Train/1/1_1/1_1_3.jpg --s
 
 
 
-## 3. modeling
+# 3. modeling
 
 
 
@@ -365,6 +365,6 @@ sweeps a threshold, and prints Accuracy, Precision/Recall/F1, FAR/FRR, and AUC. 
 <br>
 
 
-## 4. Reports 
+# 4. Reports 
 
 
