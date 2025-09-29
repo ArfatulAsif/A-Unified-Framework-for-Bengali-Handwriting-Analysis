@@ -150,15 +150,41 @@ You can customize dataset and use datatype: ".jpg", ".jpeg", ".png", ".bmp", ".t
 3. `sample_two_distinct` function takes items as input and retuns random two items. 
 
 
+### Role : 
+
+The role of this pipeline is to properly index dataset (lines) by writers from the directory. Split writers into train + validation set. 
 
 
 
-## Visualize how the preprocessing pipeline:
+## 2. preprocessing 
+
+
+### `pipeline.py` 
+
+<br>
+
+<img src="images/preprocessing.png">
+
+<br>
+
+
+### Visualize preprocessing pipeline (Preprocessing + Extract Patches):
+
 
 ```bash
-python -m preprocessor.view_preprocessor --file ./data/Test/1/1_1/1_1_1.jpg --show-patches
+python -m preprocessor.view_preprocessor --file ./data/Train/1/1_1/1_1_3.jpg --show-patches
 ```
 
+<br>
+
+<img src="images/Visualize preprocessing.png">
+
+<br>
+
+
+<img src="images/Visualize preprocessing_patches.png">
+
+<br>
 
 
 # Train
