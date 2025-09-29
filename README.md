@@ -521,9 +521,7 @@ Each line is preprocessed and split into K informative patches. A **shared Line 
 python -m page.show_lines_segmentation  ./path/to/page/image.jpg
 ```
 
-<img src="images/Line_segmentation.png" width="40%">
-
-<img src="images/segmented_lines.png" width="40%">
+<img src="images/Line_segmentation.png" width="40%">   <img src="images/segmented_lines.png" width="40%">
 
 
 
