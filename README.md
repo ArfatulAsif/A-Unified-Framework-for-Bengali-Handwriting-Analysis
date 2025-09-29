@@ -621,3 +621,30 @@ The script takes two inputs **line or page**, applies the same **preprocessing**
 
 ---
 
+<br>
+<br>
+
+
+# 8. retrieval:
+
+(I will add this later, just keep in mind that retrieval was done using the found threshold from `page evaluation`)
+
+
+# 9. Clustering: 
+
+
+(I will add this later, just keep in mind that clustering hyperperameter was first tuned on the Test dataset of (215-230))
+And the best `eps` and `min sample` was reported and stored.
+
+
+Using the stored clustering `eps` and `min sample`, evaluation was done on completely different (231-237) dataset as well as Different sourced dataset.
+
+
+
+
+
+
+
+
+
+
