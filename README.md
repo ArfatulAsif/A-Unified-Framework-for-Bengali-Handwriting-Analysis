@@ -49,7 +49,7 @@ Given a document pool (containing many pages of handwritings of many different w
 
 
 
-
+<br>
 
 
 # All Pipelines:
