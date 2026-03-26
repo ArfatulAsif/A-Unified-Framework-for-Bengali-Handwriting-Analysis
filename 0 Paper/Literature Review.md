@@ -1,5 +1,8 @@
-# Domain: Any Language
-## Subdomain: First mention of handwriting verification system (1980-2000) 
+# Writer Verification 
+
+
+## Domain: Any Language
+### Subdomain: First mention of handwriting verification system (1980-2000) 
 
 <br>
 
@@ -27,8 +30,9 @@ ___
 
 
 
-# Domain: Any Language
-## Subdomain: Somewhat modern aproach to Handwriting verification system (2010-2015) 
+
+## Domain: Any Language
+### Subdomain: Somewhat modern aproach to Handwriting verification system (2010-2015) 
 
 <br>
 
@@ -51,8 +55,8 @@ ___
 
 
 
-# Domain: Any Language
-## Subdomain: State of the art appraoch to Handwriting verification system (2017-2025)
+## Domain: Any Language
+### Subdomain: State of the art appraoch to Handwriting verification system (2017-2025)
 
 <br>
 
@@ -79,8 +83,8 @@ ___
 
 
 
-# Domain: Bangla Specific
-## Subdomain: State of the art approach for Bangla Handwriting verification system (2017-2025) 
+## Domain: Bangla Specific
+### Subdomain: State of the art approach for Bangla Handwriting verification system (2017-2025) 
 
 <br>
 
@@ -114,8 +118,8 @@ ___
 
 
 
-# Domain: Signature verification
-## Subdomain: State of the art approach for signature verification system {whether two signature are same or different or forged} {2018-2025}
+## Domain: Signature verification
+### Subdomain: State of the art approach for signature verification system {whether two signature are same or different or forged} {2018-2025}
 
 <br>
 
