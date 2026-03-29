@@ -1,4 +1,5 @@
-# A Deep Metric Learning Framework for Analyzing Handwriting by Writer: Verification, Retrieval, and Clustering
+# A Deep Embedding Framework for Bangla Handwriting Analysis: Writer Verification, Document Retrieval, Clustering, and Intrinsic Plagiarism Detection
+
 
 
 ## Writer Verification (Line-level, Patch Pooling)
@@ -24,6 +25,11 @@ Given reference a writer's handwritings and a document pool(containing many page
 
 Given a document pool (containing many pages of handwritings of many different writers), this system can cluster documents based on handwriting, where same handwritings are stored in the same cluster. Also number of writers are not needed, this system automatically finds it. 
 
+# J. Multi-Writer Segmentation (Intrinsic Plagiarism Detection)
+
+Multi-writer segmentation addresses the complex task of identifying distinct authorship boundaries within a handwritten document. This capability forms the core of **intrinsic plagiarism detection**. Standard plagiarism checks rely on comparing a suspicious document against an external reference database. In contrast, intrinsic detection analyzes the internal stylistic consistency of the document itself. By autonomously identifying sudden, unauthorized shifts in handwriting style across consecutive lines or paragraphs, the system can flag sections that were forged or completed by an unauthorized collaborator.
+
+
 
 
 # Folder Order
@@ -46,10 +52,29 @@ Given a document pool (containing many pages of handwritings of many different w
 
 **9. clustering**
 
+**10. multi_writer**
+
+
+
 
 
 
 <br>
+
+
+---
+---
+---
+
+
+# This one following old version:
+
+# The updated pipeline is on `0 paper` folder:
+
+
+---
+---
+---
 
 
 # All Pipelines:

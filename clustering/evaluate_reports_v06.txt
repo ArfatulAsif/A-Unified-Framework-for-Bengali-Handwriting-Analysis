@@ -1,0 +1,17 @@
+
+=============== 12 writers Evaluation ======== 
+
+
+
+
+Found 138 pages across 12 writers.
+Embedding pages: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 138/138 [13:33<00:00,  5.90s/page]
+Embeddings ready: 138
+DBSCAN → clusters: 13, noise pages: 23
+
+--- Clustering Evaluation (pairwise) ---
+Metric: cosine | eps: 0.0400 | min_samples: 2
+Clusters: 13 | Noise: 23 | Pages: 138
+Accuracy: 0.9506 | Precision: 0.7695 | Recall: 0.7266 | F1: 0.7474 | AUC: 0.9713
+TP: 691, TN: 8295, FP: 207, FN: 260
+FPR: 0.0243 | FNR: 0.2734

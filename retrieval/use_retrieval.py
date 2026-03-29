@@ -18,6 +18,7 @@ python -m retrieval.use_retrieval /path/to/pool /path/to/reference_page.jpg /pat
 python -m retrieval.use_retrieval ./data/Different_data_set_for_retrieval_and_clustering_testing ./data/Different_data_set_for_retrieval_and_clustering_testing/0002_02.tif ./retrieval/output_of_use_retrieval
 
 
+python -m retrieval.use_retrieval ./data/Different_data_set_for_retrieval_and_clustering_testing ./data/Different_data_set_for_retrieval_and_clustering_testing/0001_01.tif ./retrieval/output_of_use_retrieval
 
 
 """

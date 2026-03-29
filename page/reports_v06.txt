@@ -1,0 +1,85 @@
+
+============================= Based on V_06 : 370 trained patch encoder =========
+
+================================ 215-230, 0000-0015  (32) Evaluation for getting best threshold : Sampled 200 page pairs (positives=100, negatives=100)=========
+
+cuda
+215
+216
+217
+218
+219
+220
+221
+222
+223
+224
+225
+226
+227
+228
+229
+230
+Writer_0000
+Writer_0001
+Writer_0002
+Writer_0004
+Writer_0005
+Writer_0006
+Writer_0007
+Writer_0008
+Writer_0009
+Writer_0010
+Writer_0011
+Writer_0005
+Writer_0006
+Writer_0007
+Writer_0008
+Writer_0009
+Writer_0010
+Writer_0011
+Writer_0012
+Writer_0013
+Writer_0014
+Writer_0015
+Writer_0005
+Writer_0006
+Writer_0007
+Writer_0008
+Writer_0009
+Writer_0010
+Writer_0011
+Writer_0012
+Writer_0013
+Writer_0006
+Writer_0007
+Writer_0008
+Writer_0009
+Writer_0010
+Writer_0011
+Writer_0009
+Writer_0010
+Writer_0011
+Writer_0011
+Writer_0012
+Writer_0013
+Writer_0014
+Writer_0015
+Sampled 200 page pairs (positives=100, negatives=100)
+Embedding & scoring pages: 100%|██████████████████████████████████████████████████████████████████████████████████████████| 200/200 [52:11<00:00, 15.66s/pair] 
+Threshold sweep: 100%|███████████████████████████████████████████████████████████████████████████████████████████████████| 4000/4000 [00:06<00:00, 650.41th/s] 
+
+--- Page-level intersections ---
+PR=RC threshold ≈ 0.204000 | PR=RC value ≈ 0.9500
+EER threshold   ≈ 0.204000 | error rate ≈ 0.0500
+
+--- Page-level metrics @ PR=RC ---
+Threshold: 0.204000
+Accuracy: 0.9500 | Precision: 0.9500 | Recall: 0.9500 | F1: 0.9500 | AUC: 0.9827
+TP: 95, TN: 95, FP: 5, FN: 5
+FPR: 0.0500 | FNR: 0.0500
+
+
+
+
+

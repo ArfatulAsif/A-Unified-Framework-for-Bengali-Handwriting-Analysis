@@ -20,7 +20,7 @@ Optional: visualize 128x128 content-aware patches used for patch pooling.
 
 
 Example:
-python -m preprocessor.view_preprocessor --file ./data/Train/1/1_1/1_1_2.jpg --show-patches
+python -m preprocessor.view_preprocessor --file ./data/Train/2/2_1/2_1_3.jpg --show-patches
 
 
 python -m preprocessor.view_preprocessor --file ./data/Test/147/147_1/147_1_2.jpg --show-patches

@@ -211,7 +211,7 @@ def main():
 
     # Prepare directories and variables for saving the best model (checkpointing).
     Path(cfg["paths"]["model_dir"]).mkdir(parents=True, exist_ok=True)
-    ckpt_path = cfg["paths"]["siamese_weights"]
+    ckpt_path = cfg["paths"]["chk_points_weights"]
     best_val = float("inf")
     # Set up variables for early stopping.
     patience = cfg["training"]["early_stopping_patience"]

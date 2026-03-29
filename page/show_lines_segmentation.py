@@ -2,9 +2,12 @@
 
 
 # Just visualize (no saving)
-# python -m page.show_lines_segmentation  ./data/Evaluate_For_Pages/215/215_1.jpg
+# python -m page.show_lines_segmentation  ./data/Evaluate_For_Pages/218/218_2.jpg
 
 # python -m page.show_lines_segmentation  ./data/Evaluate_For_Pages/216/216_1.jpg
+
+
+# python -m page.show_lines_segmentation  ./data/Multi_Writer/Test_pages/0001_0002_0003_0006.jpg
 
 # Save crops to a folder and visualize
 # python -m page.show_lines_segmentation /path/to/page.jpg --save-dir /tmp/lines

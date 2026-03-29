@@ -13,9 +13,20 @@ from sklearn.metrics import (
 
 from page.page_embedding import load_patch_encoder, embed_page
 
+plt.rcParams.update({
+    "font.size": 14,
+    "axes.titlesize": 16,
+    "axes.labelsize": 14,
+    "legend.fontsize": 12,
+    "xtick.labelsize": 12,
+    "ytick.labelsize": 12,
+})
+
+
+
 # How many pairs to sample
-N_POS = 100
-N_NEG = 100
+N_POS = 60
+N_NEG = 60
 
 def set_seeds(seed: int):
     import random as pyrand

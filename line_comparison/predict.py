@@ -9,23 +9,18 @@ It outputs the cosine distance and compares it to the threshold in config.yml.
 Run it like: 
 
 
-python -m use_model.predict --config config.yml --img_a ./data/Test/141/141_1/141_1_1.jpg --img_b ./data/Test/141/141_2/141_2_2.jpg
-
-python -m use_model.predict --config config.yml --img_a ./data/Test/142/142_1/142_1_1.jpg --img_b ./data/Test/141/141_2/141_2_2.jpg
 
 
-python -m use_model.predict --config config.yml --img_a ./data/Test/143/143_1/143_1_1.jpg --img_b ./data/Test/147/147_1/147_1_2.jpg
+python -m line_comparison.predict --config config.yml --img_a ./data/Test/217/217_1/217_1_1.jpg --img_b ./data/Test/217/217_2/217_2_1.jpg
+
+python -m line_comparison.predict --config config.yml --img_a ./data/Test/222/222_1/222_1_1.jpg --img_b ./data/Test/227/227_2/227_2_2.jpg
 
 
-python -m use_model.predict --config config.yml --img_a ./data/Test/147/147_1/147_1_1.jpg --img_b ./data/Test/147/147_2/147_2_2.jpg
+python -m line_comparison.predict --config config.yml --img_a ./data/Test/221/221_1/221_1_1.jpg --img_b ./data/Test/229/229_2/229_2_2.jpg
 
 
-python -m use_model.predict --config config.yml --img_a ./data/Test/141/141_1/141_1_1.jpg --img_b ./data/Test/141/141_2/141_2_1.jpg
+python -m line_comparison.predict --config config.yml --img_a ./data/Test/216/216_1/216_1_1.jpg --img_b ./data/Test/220/220_2/220_2_2.jpg
 
-python -m use_model.predict --config config.yml --img_a ./data/Test/141/141_1/141_1_1.jpg --img_b ./data/Test/141/141_2/141_2_2.jpg
-
-
-python -m use_model.predict --config config.yml --img_a ./data/Test/142/142_1/142_1_1.jpg --img_b ./data/Test/141/141_2/141_2_2.jpg
 
 
 """

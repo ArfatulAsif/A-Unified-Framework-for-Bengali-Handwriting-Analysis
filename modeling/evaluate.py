@@ -31,9 +31,20 @@ from modeling.model_defs import get_patch_encoder
 from preprocessor.pipeline import preprocess_line, extract_patches_content_only
 from data.dataset import index_writer_images
 
+plt.rcParams.update({
+    "font.size": 14,
+    "axes.titlesize": 16,
+    "axes.labelsize": 14,
+    "legend.fontsize": 12,
+    "xtick.labelsize": 12,
+    "ytick.labelsize": 12,
+})
+
+
+
 # ---------------- Configurable numbers ----------------
-N_POS = 1000   # number of same-writer pairs to sample
-N_NEG = 1000   # number of different-writer pairs to sample
+N_POS = 500   # number of same-writer pairs to sample
+N_NEG = 500   # number of different-writer pairs to sample
 # ------------------------------------------------------
 
 
