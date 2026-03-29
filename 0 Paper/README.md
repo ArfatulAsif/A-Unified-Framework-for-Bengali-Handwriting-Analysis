@@ -1,5 +1,4 @@
-# A Deep Embedding Framework for Analyzing Handwriting by Writer: Writer Verification, Document Retrieval, Clustering, and Multi-Writer Segmentation
-
+# A Deep Embedding Framework for Bangla Handwriting Analysis: Writer Verification, Document Retrieval, Clustering, and Intrinsic Plagiarism Detection
 
 <br>
 
