@@ -1,3 +1,13 @@
+# A Deep Embedding Framework for Analyzing Handwriting by Writer: Writer Verification, Document Retrieval, Clustering, and Multi-Writer Segmentation
+
+
+<br>
+
+
+---
+
+<br>
+
 # 0. Abstract
 
 Automated handwriting analysis systems have diverse applications, ranging from writer verification and forensic document examination to sorting massive historical archives and detecting intrinsic plagiarism in academic assignments. However, most existing frameworks are restricted to closed-set conditions, rely on granular text segmentation, and struggle to generalize to entirely unseen writers—limitations that are particularly pronounced for complex, ligature-rich scripts like Bangla. 
