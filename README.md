@@ -86,7 +86,7 @@ Multi-writer segmentation addresses the complex task of identifying distinct aut
 ### Create virtual envorntment
 
 ```
-conda create --name "pt-gpu
+conda create --name "pt-gpu"
 ```
 
 ```
