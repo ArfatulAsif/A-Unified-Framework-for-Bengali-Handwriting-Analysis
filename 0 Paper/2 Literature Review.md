@@ -2,6 +2,10 @@
 
 ## Writer Verification and Identification Systems
 
+
+**Start with earlier signature verification systems........**
+
+
 Automated handwriting analysis has transitioned from heavily engineered, closed-set identification tasks to open-set, text-independent verification frameworks capable of generalizing to unknown writers.
 
 ### Legacy Approaches
