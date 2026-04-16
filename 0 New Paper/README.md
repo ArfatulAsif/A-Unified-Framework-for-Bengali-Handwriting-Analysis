@@ -99,14 +99,18 @@ For full-page inference on edge devices, the segmentation pipeline must balance 
 
 **Analysis:** Relying on native OCR paragraph detection fails to cleanly isolate individual handwritten strokes, causing a 7.80% drop. Similarly, using a fixed-pixel heuristic for line grouping fails on variable-resolution scans, leading to severe under- and over-segmentation (a 5.70% penalty). Our proposed scale-normalized pure detection strategy—coupled with an adaptive tolerance heuristic to handle natural vertical handwriting jitter—preserves bounding box integrity while rescuing the framework from the massive latency bottlenecks associated with full text recognition.
 
+
+
+
+
 #### 4.3.5. Hierarchical Aggregation
-Finally, we evaluate the structural logic of how local patch embeddings are aggregated into a global identity vector for a full multi-line document.
+Finally, we evaluate the structural logic of how local patch embeddings are aggregated into a global identity vector for a full multi-line document. In this ablation, we measure both the biometric accuracy and the total end-to-end processing time per page (including preprocessing, segmentation, and model inference).
 
 **Table VI: Ablation on Hierarchical Aggregation**
 
-| Configuration Variant | Global Spatial Context | Page-Level Acc. | Δ Accuracy |
-| :--- | :--- | :--- | :--- |
-| **Proposed: Hierarchical (Patch → Line → Page)** | **Preserved** | **97.10%** | **-** |
-| Flat Aggregation (Patch → Page, Skipping Lines) | Spatially Agnostic | 88.00% | -9.10% |
+| Configuration Variant | Global Spatial Context | Total Time / Page | Page-Level Acc. | Δ Accuracy |
+| :--- | :--- | :--- | :--- | :--- |
+| **Proposed: Hierarchical (Patch → Line → Page)** | **Preserved** | **[1.15] s** | **97.10%** | **-** |
+| Flat Aggregation (Patch → Page, Skipping Lines) | Spatially Agnostic | [0.95] s | 88.00% | -9.10% |
 
-**Analysis:** Bypassing the intermediate line-level pooling phase effectively treats the page as a disorganized "bag of disconnected patches," destroying the spatial geometry of the text. By forcing the network to first define the horizontal stroke dynamics (the line) before averaging those lines into a global identity, the hierarchical pooling strategy preserves spatial context and yields a massive 9.10% improvement in final verification accuracy.
+**Analysis:** Bypassing the intermediate line-level pooling phase forces the network into a flat aggregation strategy. While this flat approach marginally reduces the total end-to-end processing time by omitting the line-level geometric cropping and intermediate pooling calculations, it effectively treats the full document as an unstructured, disorganized "bag of disconnected patches." This spatially agnostic approach destroys the two-dimensional geometric context of the handwriting. By forcing the network to first define the horizontal stroke dynamics (the line) before averaging those lines into a global identity, the hierarchical pooling strategy preserves spatial context and yields a massive 9.10% improvement in final verification accuracy, heavily justifying the slight increase in total processing time.
