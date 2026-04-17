@@ -68,7 +68,8 @@ $$I_{crop} = I_{clahe}[y_0:y_1, x_0:x_1]$$
 
 Next, we normalize the physical scale of the handwriting. $I_{crop}$ is resized to a fixed target height $H_{target} = 128$ pixels while strictly preserving its original aspect ratio, resulting in a resized image $I_{res}$ of width $W_{new}$. To unify the tensor dimensions for batch processing without distorting the handwriting geometry, $I_{res}$ is placed onto a fixed-size canvas $C \in \mathbb{R}^{H_{target} \times W_{max}}$, where the maximum width $W_{max} = 1580$. During training, we actuate spatial data augmentation by placing $I_{res}$ at a random horizontal offset (`place_train="random"`), whereas during evaluation, we center it deterministically (`place_eval="center"`). The canvas is then normalized to a continuous float range $[0, 1]$.
 
-**Mathematical Patch Extraction**
+#### **Patch Extraction**
+
 Because handwriting lines vary drastically in length, we model each line as a sequence of localized, overlapping visual patches. Let a single patch be mathematically designated as $p_k \in \mathbb{R}^{P \times P \times 1}$, where the patch size $P = 128$. 
 
 We extract these patches using a sliding window approach along the horizontal axis of the valid content region $[x_{start}, x_{end}]$ of the canvas $C$. A patch $p_k$ at step $k$ is extracted starting at coordinate $x_k = x_{start} + k \cdot S$, where the stride length $S = 56$:
