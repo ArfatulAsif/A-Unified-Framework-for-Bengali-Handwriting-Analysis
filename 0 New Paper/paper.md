@@ -46,3 +46,49 @@ _> Note: Synthesized pages for segmentation were created by cropping and vertica
 
 **Standardized Ablation Cohort:**
 Finally, to conduct fair State-of-the-Art (SOTA) comparisons and detailed ablation studies without exhausting our primary test sets, we isolated a standardized mini-cohort of 100 writers. This cohort was strictly partitioned into 80 train/validation writers and 20 test writers for line-level tasks, with 10 of those test writers reserved for page-level evaluations.
+
+
+
+
+## 3.3 Preprocessing Handwriting Lines
+
+To ensure our feature extractor learns robust stylistic representations rather than superficial dataset artifacts (e.g., uneven lighting, arbitrary margins, or scanner noise), we subject each segmented handwriting line to a stringent, multi-stage signal conditioning and geometric normalization pipeline, as illustrated in **Figure 2**.
+
+
+
+<img src="images/preprocessing.png">
+
+
+Let the raw grayscale handwriting line be denoted as $I_{raw}$. First, to maximize ink visibility against degraded backgrounds, we apply Contrast Limited Adaptive Histogram Equalization (CLAHE) to produce an enhanced image, $I_{clahe}$. 
+
+To eliminate arbitrary background margins, we generate a binary adaptive text mask $M$ from $I_{clahe}$. By computing the smoothed 1D pixel projections along the horizontal and vertical axes of $M$, we isolate the tightest bounding coordinates $[y_0, y_1]$ and $[x_0, x_1]$ that contain valid ink. We then crop the enhanced image to these coordinates to yield the content-only image:
+<br>
+
+$$I_{crop} = I_{clahe}[y_0:y_1, x_0:x_1]$$
+
+Next, we normalize the physical scale of the handwriting. $I_{crop}$ is resized to a fixed target height $H_{target} = 128$ pixels while strictly preserving its original aspect ratio, resulting in a resized image $I_{res}$ of width $W_{new}$. To unify the tensor dimensions for batch processing without distorting the handwriting geometry, $I_{res}$ is placed onto a fixed-size canvas $C \in \mathbb{R}^{H_{target} \times W_{max}}$, where the maximum width $W_{max} = 1580$. During training, we actuate spatial data augmentation by placing $I_{res}$ at a random horizontal offset (`place_train="random"`), whereas during evaluation, we center it deterministically (`place_eval="center"`). The canvas is then normalized to a continuous float range $[0, 1]$.
+
+**Mathematical Patch Extraction**
+Because handwriting lines vary drastically in length, we model each line as a sequence of localized, overlapping visual patches. Let a single patch be mathematically designated as $p_k \in \mathbb{R}^{P \times P \times 1}$, where the patch size $P = 128$. 
+
+We extract these patches using a sliding window approach along the horizontal axis of the valid content region $[x_{start}, x_{end}]$ of the canvas $C$. A patch $p_k$ at step $k$ is extracted starting at coordinate $x_k = x_{start} + k \cdot S$, where the stride length $S = 56$:
+
+<br>
+
+$$p_k = C[:, x_k : x_k + P]$$
+
+To prevent the model from processing empty background space, we enforce a strict foreground density constraint. A patch $p_k$ is only appended to the final sequence if its ink ratio exceeds a minimum threshold $\tau$. By thresholding $p_k$ via Otsu's method, we define the foreground indicator function $f(p_k)$, and strictly enforce:
+
+<br>
+
+$$f(p_k) \geq \tau_{min}$$
+
+<br>
+
+where $\tau_{min} = 0.04$. The final preprocessed output for a single handwriting line is the sequence of valid, highly-dense patches $P_{line} = \{p_1, p_2, \dots, p_N\}$, which is subsequently passed to the patch encoder. 
+
+
+*(Note: An ablation study validating the impact of this preprocessing pipeline is provided in Section 4).*
+
+
+
