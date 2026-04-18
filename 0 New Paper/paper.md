@@ -184,3 +184,29 @@ The network was trained for a maximum of $50$ epochs. However, to prevent overfi
 
 
 
+## 3.6 Evaluation Metrics and Threshold Determination
+
+To objectively evaluate our framework on writer verification tasks (determining whether two handwriting samples belong to the same author), we operate in a biometric distance space rather than a direct classification space. 
+
+Let $e_1$ and $e_2$ represent the $L_2$-normalized feature embeddings of two given handwriting samples (either at the line or page level). The dissimilarity between these samples is computed using Cosine Distance, defined mathematically as:
+
+<br>
+
+  $$D_{cos}(e_1, e_2) = 1 - (e_1 \cdot e_2)$$
+
+A binary prediction is made by comparing this distance against a decision threshold $t$. If $D_{cos} \le t$, the samples are classified as a positive pair (same writer); otherwise, they are classified as a negative pair (different writers). 
+
+**Dynamic Threshold Determination and Balanced Evaluation:**
+A critical challenge in open-set verification is that relying on a statically predefined threshold is highly susceptible to dataset bias. Furthermore, skewed evaluation sets can artificially inflate performance metrics. To prevent this, our validation and testing protocols were strictly constructed using an exactly equal number of positive (same-writer) and negative (different-writer) pairs, guaranteeing a perfectly balanced evaluation devoid of class-imbalance artifacts.
+
+To ensure our decision boundary is rigorously generalizable, we dynamically determine the optimal operating threshold $t^*$ using the disjoint validation cohort prior to final testing. We perform a fine-grained continuous threshold sweep across the absolute distance range $t \in [0.0, 2.0]$. For each discrete step, we compute standard evaluation metrics: Accuracy, Precision ($P$), and Recall ($R$). We define the optimal threshold $t^*$ as the Break-Even Point—the exact piecewise-linear intersection where Precision equals Recall:
+
+<br>
+
+  $$t^* = \{ t \mid P(t) = R(t) \}$$
+
+By locking the threshold at this point of equilibrium, we guarantee the model is benchmarked at its most balanced operational state. This established threshold is then strictly applied to the entirely unseen test set to compute the final, reported metrics: Accuracy, Precision, Recall, F1-Score, and the threshold-independent Area Under the ROC Curve (AUC).
+
+
+
+
