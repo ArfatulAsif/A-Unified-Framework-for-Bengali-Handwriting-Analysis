@@ -168,7 +168,7 @@ This hierarchical approach structurally preserved the horizontal stroke sequence
 
 To objectively evaluate our framework on writer verification tasks (determining whether two handwriting samples belong to the same author), we operated in a biometric distance space rather than a direct classification space.
 
-Let $e_1$ and $e_2$ represent the $L_2$-normalized feature embeddings of two given handwriting samples (either at the line or page level). The dissimilarity between these samples was computed using Cosine Distance, defined mathematically as:
+Let $e_1$ and $e_2$ represent the $L_2$-normalized feature embeddings of two given handwriting samples (either at the line or page level), as illustrated in **Figure 5** The dissimilarity between these samples was computed using Cosine Distance, defined mathematically as:
 
 $$D_{cos}(e_1, e_2) = 1 - (e_1 \cdot e_2)$$
 
