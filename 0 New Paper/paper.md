@@ -232,9 +232,11 @@ This metric measures the probability that at least one highly relevant document 
 While Top-$k$ accuracy indicates if *any* match was found early, it does not evaluate the model's ability to cluster *all* documents by the same writer together. To evaluate overall ranking quality, we calculated the Mean Average Precision.
 
 First, we computed the Average Precision ($AP$) for a single query $q$. Let $N_q$ represent the total number of relevant documents (true matches) existing in the gallery $\mathcal{G}$. Let $P(r)$ denote the cumulative precision calculated at rank $r$, and let the indicator function $rel(r) \in \{0,1\}$ equal $1$ if the document at rank $r$ is a true match, and $0$ otherwise. The $AP$ for query $q$ is mathematically defined as:
+
 $$AP_q = \frac{1}{N_q} \sum_{r=1}^{|\mathcal{G}|} P(r) \cdot rel(r)$$
 
 This formulation heavily penalizes models that rank true matches lower down the list, as the precision fraction $P(r)$ drops as $r$ increases. Finally, the mAP was computed by averaging the $AP$ scores across all valid queries in the evaluation set $\mathcal{Q}$:
+
 $$mAP = \frac{1}{|\mathcal{Q}|} \sum_{q \in \mathcal{Q}} AP_q$$
 
 By leveraging mAP alongside Top-$k$ accuracy, we ensured the evaluation protocol captured both the model's absolute precision for immediate document retrieval and its broader capability to correctly group a writer's entire corpus within the embedding space.
