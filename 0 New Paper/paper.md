@@ -92,4 +92,63 @@ where $\tau_{min} = 0.04$. The final preprocessed output for a single handwritin
 *(Note: An ablation study validating the impact of this preprocessing pipeline is provided in Section 4).*
 
 
+## 3.4 Patch Encoder Architecture
+
+To extract highly discriminative features from the preprocessed handwriting patches, we developed and evaluated multiple convolutional and transformer-based architectures. Primarily, we created a custom, lightweight network—the **DPE-Net (Dual-Path Patch Encoder)** architecture—designed specifically to be computationally efficient, fast to train, and capable of rapid inference while maintaining robust accuracy metrics. Alongside our custom architecture, we extensively evaluated several modern State-of-the-Art (SOTA) networks, among which the pretrained **FasterNet-T0** emerged as a highly performant benchmark. 
+
+To rigorously assess the practical viability of these models for large-scale forensic analysis, our evaluation prioritizes the balance between computational efficiency and predictive power. In real-world scenarios involving massive document databases, high-throughput processing is just as critical as absolute accuracy. Therefore, we benchmarked **computational footprint (Total Parameters, FLOPs)** and **processing speed (Inference Latency per Line)** to validate scalability, while tracking **Line-Level Accuracy and AUC** to ensure robust verification performance. The exhaustive comparative benchmarking of these architectures is detailed in **Section 4.1 (Table I)**, and the isolated ablation study of our custom architecture's internal components is provided in **Section 4.2 (Table III).**
+
+
+
+### 3.4.1 DPE-Net (Dual-Path Patch Encoder) Model Architecture
+
+To capture both the fine-grained nuances of ink deposition and the broader geometric flow of handwriting, we engineered a custom Dual-Path Convolutional Neural Network, , as shown in **Figure 3.** Rather than relying on deep, parameter-heavy sequential layers, this architecture utilizes two parallel expert branches that process a shared initial feature map.
+
+The network receives an input patch tensor of dimensions $128 \times 128 \times 1$. The processing pipeline is structured as follows:
+
+1. **Shared Stem:** The input patch first passes through a downsampling stem comprising a $3 \times 3$ convolutional layer with a stride of 2 and padding of 1, followed by 2D Batch Normalization and an in-place ReLU activation. This reduces the spatial dimensions to $64 \times 64$ while projecting the features into 32 channels.
+2. **Standard Branch (Local Textures):** The first parallel pathway consists of two sequential blocks of $3 \times 3$ convolutions (stride 2, padding 1), Batch Normalization, and ReLU activations. This standard convolutional branch is specifically tuned to capture highly localized micro-textures and intricate stroke variations, outputting a 64-channel feature map.
+3. **Dilated Branch (Long-Range Strokes):** The second parallel pathway mirrors the structural depth of the first but utilizes dilated convolutions. It applies two sequential blocks of $3 \times 3$ convolutions with a stride of 2, a padding of 2, and a dilation rate of 2. This dilation artificially expands the receptive field of the $3 \times 3$ kernel to an effective $5 \times 5$ spatial area without increasing the trainable parameter count. This branch is designed to trace long-range stroke connectivity and continuous spatial patterns, yielding a secondary 64-channel feature map.
+4. **Feature Fusion and Patch Embedding:** The outputs from both parallel branches are concatenated along the channel dimension to form a comprehensive 128-channel feature map. We apply 2D Global Average Pooling (GAP) to collapse the spatial dimensions, followed by a dense Linear layer that projects the features into the final $128$-dimensional patch embedding vector. 
+
+
+
+
+
+
+
+***
+
+**Line-Level Feature Aggregation:**
+Because handwriting lines naturally vary in length, they are modeled as an arbitrary sequence of $K$ valid patches, $P_{line} = \{p_1, p_2, \dots, p_K\}$. The DPE-Net, denoted here as the embedding function $f_{\theta}$, processes these patches simultaneously to extract a corresponding sequence of patch embeddings $E = \{e_1, e_2, \dots, e_K\}$, where each $e_k = f_{\theta}(p_k) \in \mathbb{R}^{D}$ and the embedding dimension $D = 128$. 
+
+To fuse these localized textual and geometric features into a single, comprehensive biometric descriptor, we apply Mean Pooling across the sequential $K$ dimension, computing the raw line-level representation $v$:
+<br>
+
+$$v = \frac{1}{K} \sum_{k=1}^{K} e_k$$
+
+Finally, to stabilize the distance metric computations required for the subsequent Triplet Margin Loss optimization, the aggregated descriptor $v$ is subjected to $L_2$ normalization. This mathematically projects the final line embedding $\hat{v}$ onto a unit hypersphere $\mathbb{S}^{D-1}$:
+<br>
+
+$$\hat{v} = \frac{v}{\|v\|_2}$$
+
+where $\|\cdot\|_2$ denotes the standard Euclidean norm. This normalized vector $\hat{v}$ serves as the final, highly discriminative feature representation of the entire handwriting line.
+
+
+
+
+
+### 3.4.2 Pretrained FasterNet-T0
+
+As a high-performance alternative to our custom DPE-Net, we integrated the FasterNet-T0 architecture as a primary State-of-the-Art (SOTA) encoder within our pipeline. FasterNet was selected for its exceptional balance of high predictive accuracy and rapid processing speeds. It operates on a high-speed CNN paradigm designed to maximize floating-point operations per second (FLOPS) by utilizing partial convolutions (PConv).
+
+For our framework, we utilized the FasterNet-T0 variant initialized with weights pretrained on the ImageNet dataset, ensuring robust, generalized foundational feature extraction. We adapted the network natively for single-channel grayscale inputs and replaced the standard classification head with a $128$-dimensional linear projection layer. Identical to our custom architecture, the FasterNet-T0 processes sequences of $K$ patches and aggregates them via Mean Pooling and L2 Normalization to generate the final line-level biometric embedding.
+
+### 3.4.3 Other SOTA Encoders Considered
+
+
+To rigorously validate our selection of **DPE-Net** and **FasterNet-T0** as our primary operational models, we established a comprehensive benchmarking cohort representing diverse architectural paradigms. We evaluated classic deep convolutional networks (**Pretrained ResNet-18** [Classic CNN]), mobile-optimized lightweight architectures (**Pretrained MobileNetV4 Conv-S** [Mobile CNN]), and pure self-attention mechanisms (**Pretrained ViT-Tiny** [Pure Transformer]). Furthermore, we investigated several cutting-edge hybrid architectures that fuse CNNs and Transformers to balance local feature extraction with global contextual awareness. These included **Pretrained EdgeNeXt-XXS** [Hybrid Edge], **Pretrained EfficientViT-M0** [Hybrid Speed], and custom hybrid combinations linking these pretrained backbones with our proprietary Single-Path aggregation heads (e.g., **Pretrained EdgeNeXt-XXS + Single-Path** [Strided + GAP] and **Pretrained FasterNet-T0 + Single-Path** [Strided + GAP]).
+
+
+
 
