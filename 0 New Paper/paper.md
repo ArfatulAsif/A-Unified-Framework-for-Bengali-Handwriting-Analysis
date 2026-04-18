@@ -6,7 +6,7 @@ All computational tasks, including data preprocessing and model training, were e
 
 ## 3.1 Dataset Collection and Preparation
 
-To construct a comprehensive, highly variable, and inclusive dataset, we aggregated data from three primary sources:
+To construct a comprehensive, highly variable, and inclusive Bangla handwriting dataset, we aggregated data from three primary sources:
 
 1. **BN-HTRd:** Provided existing line-segmented images and full handwritten pages from 237 distinct writers.
 2. **WBSUBNdb_text:** Contributed handwritten pages from 188 writers. We manually processed these pages through our line-segmentation pipeline to create dedicated line-level datasets, visually evaluating and verifying each segmented line to ensure high ground-truth quality.
