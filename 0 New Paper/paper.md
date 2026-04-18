@@ -174,6 +174,25 @@ $$D_{cos}(e_1, e_2) = 1 - (e_1 \cdot e_2)$$
 
 Because all feature vectors are $L_2$-normalized prior to distance calculation, minimizing the Squared Euclidean distance during Triplet Loss optimization mathematically translates directly to maximizing Cosine similarity during evaluation. A binary prediction was made by comparing this distance against a decision threshold $t$. If $D_{cos} \le t$, the samples were classified as a positive pair (same writer); otherwise, they were classified as a negative pair (different writers).
 
+
+To quantitatively assess the framework's verification performance, we defined the standard binary classification outcomes specifically in the context of writer pairing:
+* **True Positives ($TP$):** Same-writer pairs correctly classified as a match ($D_{cos} \le t$).
+* **True Negatives ($TN$):** Different-writer pairs correctly classified as non-matches ($D_{cos} > t$).
+* **False Positives ($FP$):** Different-writer pairs incorrectly classified as a match (False Acceptance).
+* **False Negatives ($FN$):** Same-writer pairs incorrectly classified as non-matches (False Rejection).
+
+Based on these defined biometric pairing outcomes, the primary performance metrics are mathematically formulated as follows:
+
+$$Accuracy = \frac{TP + TN}{TP + TN + FP + FN}$$
+
+$$Precision \ (P) = \frac{TP}{TP + FP}$$
+
+$$Recall \ (R) = \frac{TP}{TP + FN}$$
+
+$$F1\text{-}Score = 2 \cdot \frac{P \cdot R}{P + R}$$
+
+
+
 **Dynamic Threshold Determination and Balanced Evaluation:**
 A critical challenge in open-set verification is that relying on a statically predefined threshold is highly susceptible to dataset bias. Furthermore, skewed evaluation sets can artificially inflate performance metrics. To prevent this, our validation and testing protocols were strictly constructed using an exactly equal number of positive (same-writer) and negative (different-writer) pairs, guaranteeing a perfectly balanced evaluation devoid of class-imbalance artifacts.
 
