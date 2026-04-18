@@ -184,29 +184,59 @@ The network was trained for a maximum of $50$ epochs. However, to prevent overfi
 
 
 
-## 3.6 Evaluation Metrics and Threshold Determination
 
-To objectively evaluate our framework on writer verification tasks (determining whether two handwriting samples belong to the same author), we operate in a biometric distance space rather than a direct classification space. 
 
-Let $e_1$ and $e_2$ represent the $L_2$-normalized feature embeddings of two given handwriting samples (either at the line or page level). The dissimilarity between these samples is computed using Cosine Distance, defined mathematically as:
 
-<br>
 
-  $$D_{cos}(e_1, e_2) = 1 - (e_1 \cdot e_2)$$
+## 3.6 Page-Level Line Segmentation Pipeline
 
-A binary prediction is made by comparing this distance against a decision threshold $t$. If $D_{cos} \le t$, the samples are classified as a positive pair (same writer); otherwise, they are classified as a negative pair (different writers). 
+To evaluate our framework on full unconstrained documents, we required a robust pipeline to systematically extract individual handwriting lines. Because our biometric encoder relied on stroke geometry rather than semantic meaning, we bypassed computationally heavy Optical Character Recognition (OCR) text decoding in favor of a high-speed, scale-normalized approach:
+
+1. **Scale-Normalized Detection:** The document was dynamically resized (preserving aspect ratio) to a maximum dimension of 1024 pixels. It was then passed through a CRAFT-based detection module to extract raw horizontal bounding boxes, skipping the character recognition phase entirely.
+2. **Adaptive Tolerance Grouping:** Fragmented word boxes were grouped into continuous horizontal lines based on their vertical center coordinates. Two adjacent boxes were merged if their vertical distance was strictly less than an adaptive tolerance threshold ($\tau = 0.5$) scaled by the height of the preceding box.
+3. **Margin Extraction:** The aggregated line coordinates were projected back to the original high-resolution scale, padded with a 4-pixel margin to preserve extreme ascenders and descenders, and cropped.
+
+The selection of this specific detection and adaptive grouping strategy was driven by extensive latency and accuracy benchmarking. A detailed comparative analysis of this pipeline against alternative segmentation strategies is provided in the ablation study in **Section 4.2.3 (Table V)**.
+
+---
+
+## 3.7 Hierarchical Local-to-Global Feature Aggregation
+
+For full-page verification, we needed to compress the extracted visual information into a single highly discriminative biometric vector. We achieved this through a structured, hierarchical aggregation pipeline (Patch $\rightarrow$ Line $\rightarrow$ Page).
+
+Mathematically, let a full document page $D$ be segmented into $L$ valid handwriting lines, $D = \{l_1, l_2, \dots, l_L\}$. As established in Section 3.4.1, each line $l_i$ is represented by a sequence of $K$ patches, where the encoder mapped each patch to an embedding $e_{i,k}$.
+
+First, we aggregated the localized patches to form the line-level representation $v_i$ via mean pooling:
+
+$$v_i = \frac{1}{K} \sum_{k=1}^{K} e_{i,k}$$
+
+Next, we integrated the sequential line vectors to form the global raw page representation $V$ by applying a second tier of mean pooling across the $L$ dimension:
+
+$$V = \frac{1}{L} \sum_{i=1}^{L} v_i$$
+
+Finally, to stabilize distance metric computations, the aggregated page descriptor was subjected to $L_2$ normalization, projecting the final biometric signature $\hat{V}$ onto a unit hypersphere:
+
+$$\hat{V} = \frac{V}{\|V\|_2}$$
+
+This hierarchical approach structurally preserved the horizontal stroke sequences inherent to human handwriting. By enforcing a Line-Level intermediary, the network forced the patches to maintain their sequential spatial context. This geometry-aware integration proved superior to "Flat" aggregation strategies (Patch $\rightarrow$ Page), which bypassed line segmentation and treated the document as an unordered "bag of patches." The complete experimental validation justifying this hierarchical selection over flat pooling networks is provided in the ablation study in **Section 4.2.4 (Table VI)**.
+
+---
+
+## 3.8 Evaluation Metrics and Threshold Determination
+
+To objectively evaluate our framework on writer verification tasks (determining whether two handwriting samples belong to the same author), we operated in a biometric distance space rather than a direct classification space.
+
+Let $e_1$ and $e_2$ represent the $L_2$-normalized feature embeddings of two given handwriting samples (either at the line or page level). The dissimilarity between these samples was computed using Cosine Distance, defined mathematically as:
+
+$$D_{cos}(e_1, e_2) = 1 - (e_1 \cdot e_2)$$
+
+A binary prediction was made by comparing this distance against a decision threshold $t$. If $D_{cos} \le t$, the samples were classified as a positive pair (same writer); otherwise, they were classified as a negative pair (different writers).
 
 **Dynamic Threshold Determination and Balanced Evaluation:**
 A critical challenge in open-set verification is that relying on a statically predefined threshold is highly susceptible to dataset bias. Furthermore, skewed evaluation sets can artificially inflate performance metrics. To prevent this, our validation and testing protocols were strictly constructed using an exactly equal number of positive (same-writer) and negative (different-writer) pairs, guaranteeing a perfectly balanced evaluation devoid of class-imbalance artifacts.
 
-To ensure our decision boundary is rigorously generalizable, we dynamically determine the optimal operating threshold $t^*$ using the disjoint validation cohort prior to final testing. We perform a fine-grained continuous threshold sweep across the absolute distance range $t \in [0.0, 2.0]$. For each discrete step, we compute standard evaluation metrics: Accuracy, Precision ($P$), and Recall ($R$). We define the optimal threshold $t^*$ as the Break-Even Point—the exact piecewise-linear intersection where Precision equals Recall:
+To ensure our decision boundary was rigorously generalizable, we dynamically determined the optimal operating threshold $t^*$ using the disjoint validation cohort prior to final testing. We performed a fine-grained continuous threshold sweep across the absolute distance range $t \in [0.0, 2.0]$. For each discrete step, we computed standard evaluation metrics: Accuracy, Precision ($P$), and Recall ($R$). We defined the optimal threshold $t^*$ as the Break-Even Point—the exact piecewise-linear intersection where Precision equals Recall:
 
-<br>
+$$t^* = \{ t \mid P(t) = R(t) \}$$
 
-  $$t^* = \{ t \mid P(t) = R(t) \}$$
-
-By locking the threshold at this point of equilibrium, we guarantee the model is benchmarked at its most balanced operational state. This established threshold is then strictly applied to the entirely unseen test set to compute the final, reported metrics: Accuracy, Precision, Recall, F1-Score, and the threshold-independent Area Under the ROC Curve (AUC).
-
-
-
-
+By locking the threshold at this point of equilibrium, we guaranteed the model was benchmarked at its most balanced operational state. This established threshold was then strictly applied to the entirely unseen test set to compute the final, reported metrics: Accuracy, Precision, Recall, F1-Score, and the threshold-independent Area Under the ROC Curve (AUC).
