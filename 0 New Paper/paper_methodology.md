@@ -40,7 +40,7 @@ The overarching dataset of 435 writers was strategically partitioned into the no
 *\*Note: Synthesized pages for segmentation were created by cropping and vertically merging segments from 1–4 distinct writers to simulate intrinsic plagiarism; these were used for tuning sequential clustering/smoothing and evaluating segmentation via SER.*
 
 **Standardized Ablation Cohort:**
-Finally, to conduct fair State-of-the-Art (SOTA) comparisons and detailed ablation studies without exhausting our primary test sets, we isolated a standardized mini-cohort of 100 writers. This cohort was strictly partitioned into 80 train/validation writers and 20 test writers for line-level tasks, with 10 of those test writers reserved for page-level evaluations.
+Finally, to conduct fair State-of-the-Art (SOTA) comparisons and detailed ablation studies without exhausting our primary test sets, we used a standardized mini-cohort of 100 writers (which is a subset of the entire dataset). This cohort was strictly partitioned into 80 train/validation writers and 20 test writers for line-level tasks, with 10 of those test writers reserved for page-level evaluations.
 
 ## 3.3 Preprocessing Handwriting Lines
 
