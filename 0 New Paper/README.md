@@ -38,7 +38,7 @@ The overarching dataset of 435 writers was strategically partitioned into the no
 | **Sequential Multi-Writer Segmentation** | Tuning | 395–420 | 196 Synthesized Pages* |
 | **Sequential Multi-Writer Segmentation** | Evaluation | 421–435 | 97 Synthesized Pages* |
 
-*\*Note: Synthesized pages for segmentation were created by cropping and vertically merging segments from 1–4 distinct writers to simulate intrinsic plagiarism; these were used for tuning sequential clustering/smoothing and evaluating segmentation via SER.*
+*\*Note: Synthesized pages for segmentation were created by cropping and vertically merging segments from 1–4 distinct writers to simulate multi-author page composition; these were used for tuning sequential clustering/smoothing and evaluating segmentation via SER.*
 
 **Standardized Ablation Cohort:**
 Finally, to conduct fair State-of-the-Art (SOTA) comparisons and detailed ablation studies without exhausting our primary test sets, we used a standardized mini-cohort of 100 writers (which is a subset of the entire dataset). This cohort was strictly partitioned into 80 train/validation writers and 20 test writers for line-level tasks, with 10 of those test writers reserved for page-level evaluations.
@@ -316,7 +316,7 @@ By reporting both global (ARI, NMI) and pairwise (Accuracy, F1-Score) metrics, w
 
 ## 3.11 Sequential Multi-Writer Segmentation
 
-Most handwriting analysis research assumes that a single document page is written entirely by one person. While our clustering pipeline (Section 3.10) easily detects multiple writers across a stack of distinct pages, a more complex challenge is *intrinsic plagiarism*—when a single, continuous page contains multiple paragraphs written by different authors. To solve this, we developed a Sequential Multi-Writer Segmentation pipeline to accurately detect and map the top-to-bottom sequence of different writers on the same page. A visual demonstration of this pipeline, depicting the transition from raw multi-writer inputs to the final segmented outputs, is provided in **Figure 6**.
+Most handwriting analysis research assumes that a single document page is written entirely by one person. While our clustering pipeline (Section 3.10) easily detects multiple writers across a stack of distinct pages, a more complex challenge is *multi-author page composition*—when a single, continuous page contains multiple paragraphs written by different authors. To solve this, we developed a Sequential Multi-Writer Segmentation pipeline to accurately detect and map the top-to-bottom sequence of different writers on the same page. A visual demonstration of this pipeline, depicting the transition from raw multi-writer inputs to the final segmented outputs, is provided in **Figure 6**.
 
 To the best of our knowledge, there is no standardized framework or dataset for this specific task. To benchmark our pipeline, we manually curated a highly realistic evaluation dataset. We extracted horizontal paragraph crops from distinct writers and vertically merged them to simulate single, continuous pages containing between one and four different authors. To ensure these synthesized images visually replicated authentic, untouched documents, we carefully color-matched the backgrounds across all merged crops to eliminate distinct visual seams. 
 
@@ -356,7 +356,7 @@ $$SER = \frac{LD(S_{pred}, S_{gt})}{|S_{gt}|}$$
 where $|S_{gt}|$ is the length of the ground-truth transition sequence. The reported SER is the average across all pages in the evaluation dataset.
 
 **2. Absolute Sequence Accuracy:**
-While SER measures partial success, practical document examination often requires flawless sequence reconstruction. We defined Absolute Sequence Accuracy as the percentage of total pages where the chronological sequence was reconstructed without a single error (i.e., $LD = 0$). This metric serves as the strictest benchmark of the pipeline's capability to untangle intrinsic plagiarism.
+While SER measures partial success, practical document examination often requires flawless sequence reconstruction. We defined Absolute Sequence Accuracy as the percentage of total pages where the chronological sequence was reconstructed without a single error (i.e., $LD = 0$). This metric serves as the strictest benchmark of the pipeline's capability to untangle multi-author page composition.
 
 
 
