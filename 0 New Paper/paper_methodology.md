@@ -266,6 +266,8 @@ To partition this distance space, we evaluated multiple unsupervised clustering 
 
 We applied Agglomerative Clustering using **average linkage**, which merges pairs of clusters based on the average cosine distance between all respective member embeddings. Rather than forcing the algorithm to find a predefined number of clusters ($k$), we controlled the cluster formation dynamically using a maximum distance threshold ($\tau_{cluster}$). If the average distance between two clusters exceeded $\tau_{cluster}$, the merging process halted. 
 
+Pairwise accuracy was selected as the primary tuning metric because it holistically penalizes both impure clusters (False Positives) and incorrectly separated documents (False Negatives), ensuring the resulting clusters maintain strict biometric purity for real-world application.
+
 Because the geometric distribution of the latent space naturally varies between different neural architectures, this optimal stopping threshold was determined independently for each feature encoder. By executing a comprehensive threshold sweep on the disjoint tuning cohort, we selected the thresholds that maximized pairwise Accuracy—yielding $\tau_{cluster} = 0.150$ for the **DPE-Net** and $\tau_{cluster} = 0.110$ for the **FasterNet-T0.**
 
 ### 3.10.2 Clustering Evaluation Metrics
