@@ -30,7 +30,7 @@ The overarching dataset of 435 writers was strategically partitioned into the no
 | Pipeline / Task | Phase | Writer IDs | Data Level |
 | :--- | :--- | :--- | :--- |
 | **Patch Encoder** | Training | 1–371 | Line |
-| **Verification** | Tuning | 372–403 | Line & Page |
+| **Verification** | Evaluation @Pre=Rec | 372–403 | Line & Page |
 | **Retrieval** | Evaluation | 404–415 | Page |
 | **Clustering** | Tuning | 372–403 | Page |
 | **Clustering** | Evaluation | 404–415 | Page |
