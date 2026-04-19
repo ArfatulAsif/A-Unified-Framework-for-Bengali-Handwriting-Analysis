@@ -2,7 +2,7 @@
 
 To test our model components efficiently while ensuring fair and rigorous comparisons, all benchmarking and ablation experiments strictly adhered to the hardware configurations, preprocessing pipelines, and training hyperparameters established in Section 3. For the ablation studies, specific modifications were made to the pipeline to empirically justify the selection of each core component.
 
-These experiments were conducted on an isolated subset of 100 writers from the primary dataset, partitioned into 80 writers for training and validation, 20 writers for line-level testing, and a 10-writer subset for page-level tests.
+These experiments were conducted on a subset of 100 writers from the primary dataset, partitioned into 80 writers for training and validation, 20 writers for line-level testing, and a 10-writer subset for page-level tests, in completely disjoint manner.
 
 ## 4.1 Architectural Benchmarking
 
