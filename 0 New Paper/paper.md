@@ -34,10 +34,10 @@ The overarching dataset of 435 writers was strategically partitioned into the no
 | **Retrieval** | Evaluation | 404–415 | Page |
 | **Clustering** | Tuning | 372–403 | Page |
 | **Clustering** | Evaluation | 404–415 | Page |
-| **Sequential Multi-Writer Segmentation** | Tuning | 395–420 | Synthesized Pages* |
-| **Sequential Multi-Writer Segmentation** | Evaluation | 421–435 | Synthesized Pages* |
+| **Sequential Multi-Writer Segmentation** | Tuning | 395–420 | 196 Synthesized Pages* |
+| **Sequential Multi-Writer Segmentation** | Evaluation | 421–435 | 97 Synthesized Pages* |
 
-*\*Note: Synthesized pages for segmentation were created by cropping and vertically merging segments from 1–4 writers to simulate intrinsic plagiarism; these were used for tuning sequential clustering/smoothing and evaluating segmentation via SER.*
+*\*Note: Synthesized pages for segmentation were created by cropping and vertically merging segments from 1–4 distinct writers to simulate intrinsic plagiarism; these were used for tuning sequential clustering/smoothing and evaluating segmentation via SER.*
 
 **Standardized Ablation Cohort:**
 Finally, to conduct fair State-of-the-Art (SOTA) comparisons and detailed ablation studies without exhausting our primary test sets, we isolated a standardized mini-cohort of 100 writers. This cohort was strictly partitioned into 80 train/validation writers and 20 test writers for line-level tasks, with 10 of those test writers reserved for page-level evaluations.
