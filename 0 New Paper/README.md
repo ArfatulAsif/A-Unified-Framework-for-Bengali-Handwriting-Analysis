@@ -160,14 +160,14 @@ where $\tau_{min} = 0.04$. The final preprocessed output for a single handwritin
 
 *(Note: An ablation study validating the impact of this preprocessing pipeline is provided in Section 4).*
 
+
 ## 3.4 Patch Encoder Architecture
 
-To extract highly discriminative features from the preprocessed handwriting patches, our primary objective was to construct a robust and highly accurate biometric pipeline. To this end, we investigated architectures across varying parametric capacities. While large-scale models often yield high predictive power, their practical deployment relies on computationally expensive hardware infrastructure, typically available in cloud-based environments. In real-world document analysis scenarios, continuously uploading massive volumes of high-resolution images to centralized servers introduces severe transmission latency and storage bandwidth bottlenecks. Therefore, an equally critical objective of our framework was to ensure the architecture remained exceptionally fast and lightweight, enabling feasible deployment directly on localized edge devices.
+To extract highly discriminative features from the preprocessed handwriting patches, our primary objective was to construct a biometric pipeline that balances high predictive accuracy with extreme computational efficiency. Because practical document analysis demands fast, localized processing, we engineered the **DPE-Net (Dual-Path Patch Encoder)**—a custom architecture specifically designed for minimal computational overhead and rapid inference without sacrificing verification performance.
 
-To satisfy this dual mandate of biometric accuracy and edge-device efficiency, we engineered the **DPE-Net (Dual-Path Patch Encoder)**—a custom architecture specifically designed for minimal computational overhead and rapid inference without sacrificing verification performance. Alongside our custom network, we extensively evaluated several modern State-of-the-Art (SOTA) architectures to establish a comparative baseline. Among these, the pretrained **FasterNet-T0** emerged as a highly performant alternative that similarly satisfies these high-speed deployment requirements.
+Alongside our custom network, we extensively evaluated several modern State-of-the-Art (SOTA) architectures to establish a comparative baseline. Among these, the pretrained **FasterNet-T0** emerged as a highly performant alternative that similarly satisfies these high-speed deployment requirements.
 
-To rigorously assess the practical viability of these models for large-scale analysis, our evaluation prioritized the balance between computational efficiency and predictive power. We benchmarked architectural complexity (**Total Parameters, FLOPs**) and processing speed (**Inference Latency per Line**) to validate edge scalability, while concurrently tracking **Line-Level Accuracy and AUC** to ensure reliable biometric verification. The exhaustive comparative benchmarking of these architectures is detailed in **Section 4.1 (Table I)**, and the isolated ablation study of our custom architecture's internal components is provided in **Section 4.2 (Table III)**.
-
+To rigorously assess the practical viability of these models for large-scale analysis, we benchmarked architectural complexity (Total Parameters, FLOPs) and processing speed (Inference Latency per Line) against Line-Level Accuracy and AUC to ensure reliable biometric verification. The exhaustive comparative benchmarking of these architectures is detailed in **Section 4.1 (Table I)**, and the isolated ablation study of our custom architecture's internal components is provided in **Section 4.2 (Table III)**.
 
 
 
