@@ -114,6 +114,9 @@ However, the proposed hierarchical architecture proved strictly superior across 
 
 
 
+
+
+
 ### 4.2.5 Unsupervised Page Clustering Ablation
 
 For the document clustering pipeline, the foundational DPE-Net (Mean Pooling) was fully trained on the primary 371-writer training and validation cohort. We evaluated clustering algorithms using disjoint writer sets: writers 372–403 were used for hyperparameter tuning, and writers 404–415 were isolated for final evaluation.
@@ -125,7 +128,9 @@ For the document clustering pipeline, the foundational DPE-Net (Mean Pooling) wa
 | **Proposed: Agglomerative** | Distance Thresh: 0.110 | **99.21%** | **0.9532** | 23 | **0.7630** | **0.8658** | **0.7875** | **95.60%** |
 | DBSCAN | eps: 0.060, min_samples: 2 | 98.36% | 0.9069 | 9 (+17 Noise) | 0.5847 | 0.7791 | 0.6415 | 90.86% |
 
-While both algorithms performed exceptionally well on the tuning set, Agglomerative Clustering demonstrated significantly better scaling to the larger, unseen evaluation set, maintaining a high Adjusted Rand Index (0.7630) and overall Accuracy (95.60%). Conversely, DBSCAN's performance degraded sharply because its density-based approach classified 17 out of 138 evaluation pages as unclusterable "noise." Discarding over 12% of the dataset is unacceptable in real-world document sorting. This ablation proves that for high-dimensional, $L_2$-normalized biometric embeddings, distance-based hierarchical merging (Agglomerative) is inherently more robust and comprehensive for grouping writer styles than density-reachability metrics.
+
+While both algorithms performed exceptionally well on the tuning set, Agglomerative Clustering demonstrated superior scaling to the larger, unseen evaluation set, maintaining a high Adjusted Rand Index (0.7630) and overall Accuracy (95.60%). DBSCAN, while highly effective at identifying dense core groups, naturally isolates more ambiguous or heavily degraded samples as unassigned "noise" (labeling 17 out of 138 evaluation pages as such). Because real-world document sorting typically requires every page to be definitively assigned to an authorial group, the distance-based hierarchical merging of Agglomerative Clustering proved to be the more appropriate and comprehensive choice for this specific global partitioning task.
+
 
 ### 4.2.6 Sequential Multi-Writer Segmentation Ablation
 
@@ -138,6 +143,10 @@ To evaluate the sequential multi-writer segmentation pipeline, we again utilized
 | **Proposed: DBSCAN** | **0.090** | **5** | **0.0931** | **0.0868** | **75.26%** |
 | Agglomerative | 0.220 | 7 | 0.0906 | 0.1916 | 72.16% |
 
-The most striking result is the superior generalization of the proposed DBSCAN model (optimized at `eps = 0.090` and `min_samples = 3`). While Agglomerative Clustering slightly edged out DBSCAN on the tuning set (0.0906 vs. 0.0931 Sequence Error Rate), its performance degraded significantly on the unseen evaluation set (0.1916 SER). In contrast, DBSCAN maintained high stability, actually improving to a remarkable 0.0868 SER on the evaluation pages. Furthermore, DBSCAN proved to be the superior framework for absolute chronological reconstruction, perfectly mapping the correct writer transitions on 75.26% of the test pages. Finally, DBSCAN optimized at a tighter temporal smoothing window (5 compared to the baseline's 7), indicating that its density-reachability metric inherently produces more contiguous, stable line-level assignments without relying on aggressive post-hoc smoothing to correct hallucinated transitions.
+
+These results highlight the distinct advantage of the proposed DBSCAN model (optimized at `eps = 0.090` and `min_samples = 3`) for localized chronological tracking. While Agglomerative Clustering slightly edged out DBSCAN on the tuning set (0.0906 vs. 0.0931 Sequence Error Rate), DBSCAN demonstrated better generalization on the unseen evaluation set, improving to a remarkable 0.0868 SER. Because Agglomerative Clustering forces every sequential embedding into a discrete group, it can occasionally misassign ambiguous boundary lines between paragraphs. Conversely, DBSCAN’s density-reachability metric uses this to its advantage by isolating those ambiguous transitional lines as "noise," thereby naturally producing highly contiguous and stable line-level blocks. This inherent stability makes DBSCAN the superior framework for absolute chronological reconstruction, perfectly mapping the correct writer transitions on 75.26% of the test pages with a tighter temporal smoothing window.
+
+
+
 
 
