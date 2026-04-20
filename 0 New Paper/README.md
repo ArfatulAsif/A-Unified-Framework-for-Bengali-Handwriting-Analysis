@@ -1,3 +1,7 @@
+# A Unified Framework for Open-Set Bengali Handwriting Analysis: Writer Verification, Retrieval, Clustering, and Sequential Multi-Writer Segmentation
+
+
+
 # 0 Abstract:
 
 Automated handwriting analysis has diverse applications in forensic and archival processing. However, most frameworks are restricted to closed-set conditions and isolated character or word-level identification. These limitations are pronounced for complex scripts like Bengali (Bangla), where offline, full-document biometric analysis is exceptionally rare. 
