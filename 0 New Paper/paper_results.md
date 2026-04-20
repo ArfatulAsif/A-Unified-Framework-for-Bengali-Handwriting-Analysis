@@ -4,10 +4,13 @@ To evaluate the proposed framework, both FasterNet-T0 and DPE-Net were trained f
 
 **Table VIII: Training Dynamics and Convergence Metrics**
 
-| Architecture | Best Epoch / Total | Best Validation Loss | Avg. Epoch Time |
-| :--- | :--- | :--- | :--- |
-| **DPE-Net** | 36 / 46 | 0.0416 | 17.06 min |
-| **FasterNet-T0** | 36 / 46 | 0.0227 | 45.35 min |
+
+| Architecture | Best Epoch / Total | Best Validation Loss | Avg. Epoch Time | Storage Size |
+| :--- | :--- | :--- | :--- | :--- |
+| **DPE-Net** | 36 / 46 | 0.0416 | 17.06 min | 707 KB |
+| **FasterNet-T0** | 36 / 46 | 0.0227 | 45.35 min | 12.6 MB |
+
+
 
 ## 5.1 Line and Page-Level Evaluation Results
 
