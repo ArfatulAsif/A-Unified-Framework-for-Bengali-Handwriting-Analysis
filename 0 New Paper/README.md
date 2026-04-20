@@ -135,7 +135,11 @@ Finally, to conduct fair State-of-the-Art (SOTA) comparisons and detailed ablati
 
 ## 3.3 Preprocessing Handwriting Lines
 
-To ensure our feature extractor learns robust stylistic representations rather than superficial dataset artifacts (e.g., uneven lighting, arbitrary margins, or scanner noise), we subjected each segmented handwriting line to a stringent, multi-stage signal conditioning and geometric normalization pipeline, as illustrated in **Figure 2**.
+To ensure our feature extractor learns robust stylistic representations rather than superficial dataset artifacts (e.g., uneven lighting, arbitrary margins, or scanner noise), we subjected each segmented handwriting line to a stringent, multi-stage signal conditioning and geometric normalization pipeline, as illustrated in **Figure 1**.
+
+
+<img src="images/preprocessing.png">
+
 
 Let the raw grayscale handwriting line be denoted as $I_{raw}$. First, to maximize ink visibility against degraded backgrounds, we applied Contrast Limited Adaptive Histogram Equalization (CLAHE) to produce an enhanced image, $I_{clahe}$. 
 
@@ -173,7 +177,10 @@ To rigorously assess the practical viability of these models for large-scale ana
 
 ### 3.4.1 DPE-Net (Dual-Path Patch Encoder) Model Architecture
 
-To capture both the fine-grained nuances of ink deposition and the broader geometric flow of handwriting, we engineered a custom Dual-Path Convolutional Neural Network, as shown in **Figure 3**. Rather than relying on deep, parameter-heavy sequential layers, this architecture utilized two parallel expert branches that processed a shared initial feature map.
+To capture both the fine-grained nuances of ink deposition and the broader geometric flow of handwriting, we engineered a custom Dual-Path Convolutional Neural Network, as shown in **Figure 2**. Rather than relying on deep, parameter-heavy sequential layers, this architecture utilized two parallel expert branches that processed a shared initial feature map.
+
+<img src="images/architecture_integrated.png">
+
 
 The network received an input patch tensor of dimensions $128 \times 128 \times 1$. The processing pipeline was structured as follows:
 
@@ -207,7 +214,11 @@ To rigorously validate our selection of **DPE-Net** and **FasterNet-T0** as our 
 
 ## 3.5 Patch Encoder Model Training
 
-To optimize the feature extraction capabilities of our patch encoder, we employed a metric learning paradigm designed to explicitly separate inter-writer styles while clustering intra-writer variations. The complete end-to-end training architecture and data flow are illustrated in **Figure 4**.
+To optimize the feature extraction capabilities of our patch encoder, we employed a metric learning paradigm designed to explicitly separate inter-writer styles while clustering intra-writer variations. The complete end-to-end data flow for generating the encoding of a line is illustrated in **Figure 3.**
+
+
+<img src="images/training_setup.png">
+
 
 To train the network, we utilized a **Triplet Siamese Architecture**. During each training step, the model processed three distinct handwriting samples simultaneously: an Anchor ($x_a$), a Positive ($x_p$), and a Negative ($x_n$). The Anchor and Positive samples were distinct lines drawn from the same writer, while the Negative sample was drawn from a different, randomly selected writer. 
 
@@ -264,7 +275,7 @@ This hierarchical approach structurally preserved the horizontal stroke sequence
 
 To objectively evaluate our framework on writer verification tasks (determining whether two handwriting samples belong to the same author), we operated in a biometric distance space rather than a direct classification space.
 
-Let $e_1$ and $e_2$ represent the $L_2$-normalized feature embeddings of two given handwriting samples (either at the line or page level), as illustrated in **Figure 5** The dissimilarity between these samples was computed using Cosine Distance, defined mathematically as:
+Let $e_1$ and $e_2$ represent the $L_2$-normalized feature embeddings of two given handwriting samples (either at the line or page level), The dissimilarity between these samples was computed using Cosine Distance, defined mathematically as:
 
 $$D_{cos}(e_1, e_2) = 1 - (e_1 \cdot e_2)$$
 
@@ -408,7 +419,11 @@ By reporting both global (ARI, NMI) and pairwise (Accuracy, F1-Score) metrics, w
 
 ## 3.11 Sequential Multi-Writer Segmentation
 
-Most handwriting analysis research assumes that a single document page is written entirely by one person. While our clustering pipeline (Section 3.10) easily detects multiple writers across a stack of distinct pages, a more complex challenge is *multi-author page composition*—when a single, continuous page contains multiple paragraphs written by different authors. To solve this, we developed a Sequential Multi-Writer Segmentation pipeline to accurately detect and map the top-to-bottom sequence of different writers on the same page. A visual demonstration of this pipeline, depicting the transition from raw multi-writer inputs to the final segmented outputs, is provided in **Figure 6**.
+Most handwriting analysis research assumes that a single document page is written entirely by one person. While our clustering pipeline (Section 3.10) easily detects multiple writers across a stack of distinct pages, a more complex challenge is *multi-author page composition*—when a single, continuous page contains multiple paragraphs written by different authors. To solve this, we developed a Sequential Multi-Writer Segmentation pipeline to accurately detect and map the top-to-bottom sequence of different writers on the same page. A visual demonstration of this pipeline, depicting the transition from raw multi-writer inputs to the final segmented outputs, is provided in **Figure 4**.
+
+
+<img src="images/multi_writer_segmentation.png">
+
 
 To the best of our knowledge, there is no standardized framework or dataset for this specific task. To benchmark our pipeline, we manually curated a highly realistic evaluation dataset. We extracted horizontal paragraph crops from distinct writers and vertically merged them to simulate single, continuous pages containing between one and four different authors. To ensure these synthesized images visually replicated authentic, untouched documents, we carefully color-matched the backgrounds across all merged crops to eliminate distinct visual seams. 
 
@@ -529,6 +544,13 @@ Table III details the ablation of the spatial feature extractor, comparing dual-
 
 Integrating Mean Pooling across the patch sequence proved vastly superior to Max Pooling (+2.10%), confirming that writer identity is best captured mathematically as a continuous average of stylistic traits rather than isolated structural extremes. While the Single-Path CNN (strided + GAP) offered a slightly lighter footprint, adding the parallel dilated branch (DPE-Net) costs only ~27k parameters while boosting accuracy by +0.80%. Furthermore, DPE-Net demonstrated smoother convergence with fewer erratic spikes, reaching a deeper validation minimum of 0.0812 compared to the Single-Path CNN (strided + GAP) (see Appendix A, Figure 12)
 
+
+<img src="images/DPE-NET.png"> 
+
+<img src="images/Single Path.png">
+
+
+
 ### 4.2.3 Page-Level Line Segmentation Ablation
 
 Full-page preprocessing latency is often the primary bottleneck in real-world deployment. We evaluated our Scale-Normalized Detection against alternative OCR-based segmentation strategies, tracking both processing time and downstream biometric accuracy.
@@ -615,6 +637,11 @@ The most striking result is the superior generalization of the proposed DBSCAN m
 
 To evaluate the proposed framework, both FasterNet-T0 and DPE-Net were trained from scratch on the primary line-level dataset comprising 371 writers, partitioned into 297 for training and 74 for validation (an 80/20 writer disjoint split). The training dynamics, including convergence points and computational costs, are summarized in **Table VIII**. The complete training loss trajectory for DPE-Net is provided in **Appendix Figure 11**.
 
+
+<img src="images/Complete_New_CNN_DPE_NET_epoch_Graph.png">
+
+
+
 **Table VIII: Training Dynamics and Convergence Metrics**
 
 
@@ -626,6 +653,20 @@ To evaluate the proposed framework, both FasterNet-T0 and DPE-Net were trained f
 ## 5.1 Line and Page-Level Evaluation Results
 
 The final evaluation was conducted on a completely disjoint cohort of 32 unseen writers (IDs 372–403). Following the protocol established in Section 3.8, all metrics were computed at the Break-Even Point (where Precision equals Recall). The dynamic threshold sweep diagrams for these evaluations are provided in **Appendix Figure 12**.
+
+
+<img src="images/Complete_New_CNN_DPE_NET_line.png">
+
+<img src="images/Complete_fastnet_t0_line.png">
+
+
+
+<img src="images/Complete_New_CNN_DPE_NET_page_level.png">
+
+<img src="images/Complete_fastnet_t0_Page_Level.png">
+
+
+
 
 To rigorously test both local stroke extraction and global document aggregation, the evaluation was performed sequentially at both the line level (utilizing a strictly balanced set of 1,000 line pairs) and the page level (utilizing a balanced set of 400 full-document pairs). The systemic performance metrics for both stages, including the end-to-end processing latency for full pages, are summarized in **Table IX**.
 
