@@ -14,6 +14,18 @@
 
 
 
+
+% Save the original subsubsection command
+\let\oldsubsubsection\subsubsection
+
+% Redefine it to be just one step larger than the default
+\renewcommand{\subsubsection}[1]{\oldsubsubsection{\normalsize #1}}
+
+
+
+
+
+
 \def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
     T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
 
@@ -87,7 +99,7 @@ Offline Bengali Handwriting, Open-Set Writer Biometrics, Document-Level Analysis
 
 \PARstart{W}{riter} \textbf{verification} (1:1 matching) determines whether two different handwriting samples were authored by the same person. \textbf{Writer retrieval} (1:N search) involves taking a single query document and ranking a vast database of other documents based on their stylistic similarity. \textbf{Writer-based document clustering} is an unsupervised task that groups a massive, unlabelled stack of documents according to their distinct, unknown authors based on handwriting style only. Finally, \textbf{sequential multi-writer segmentation} is the task of detecting whether a single document page is written by multiple writers, mapping the exact chronological order of multiple distinct authors collaborating on a single, continuous page.
 
-In this paper, we suggest a unified framework that can handle all four tasks at the document (page) level, along with standard line-level verification for Bengali (Bangla) handwriting. It operates strictly under an \textbf{offline, zero-shot open-set} paradigm. Online systems rely on digital devices (like tablets) to capture real-time writing variables such as coordinates, stroke speed, and pen pressure, whereas an "offline" system analyzes static, two-dimensional scanned images of previously written documents—a significantly more challenging computer vision problem. 
+In this paper, we suggest a unified framework that can handle all four tasks at the document (page) level, along with standard line-level verification for Bengali (Bangla) handwriting. It operates strictly under an offline, zero-shot open-set paradigm. Online systems rely on digital devices (like tablets) to capture real-time writing variables such as coordinates, stroke speed, and pen pressure, whereas an "offline" system analyzes static, two-dimensional scanned images of previously written documents—a significantly more challenging computer vision problem. 
 
 Most existing work focuses heavily on signature verification \cite{b1} or analyzes isolated characters and words \cite{b2}. While some studies utilize online tracking data, offline document-level analysis remains rare and is frequently limited to closed-set environments (where training and testing writers overlap) \cite{b3}. Furthermore, while standard writer identification is widely researched than verification. also unsupervised writer clustering is rarely addressed \cite{b4}. Most critically, we found absolutely no published research tackling sequential multi-writer segmentation on a single page. Also, document-level biometric handwriting analysis research applied to the Bangla script is exceptionally rare.
 
@@ -193,11 +205,11 @@ To create a varied and inclusive Bangla handwriting dataset, we collected and co
  
 During the combining process, we reviewed the data to ensure it reflected the unpredictable nature of real-world documents. We paid special attention to variations like unusually long and short lines, diverse page colors, and curved or slanted handwriting.
 
-\textbf{Dataset Summary:}
+Dataset Summary:
 \begin{itemize}
-    \item \textbf{Total Writers:} 435
-    \item \textbf{Total Handwritten Pages:} 2,825 (Average of ~7 pages per writer)
-    \item \textbf{Total Segmented Lines:} 29,268 (Average of ~70 lines per writer)
+    \item Total Writers: 435
+    \item Total Handwritten Pages: 2,825 (Average of ~7 pages per writer)
+    \item Total Segmented Lines: 29,268 (Average of ~70 lines per writer)
 \end{itemize}
 
 \subsection{Writer-Disjoint Split and Evaluation Protocol}
@@ -331,9 +343,9 @@ where $\tau_{min} = 0.04$. The final preprocessed output for a single handwritin
 \subsection{Patch Encoder Architecture}
 \label{subsec:patch_encoder}
 
-To extract distinct features from the processed handwriting patches, we aimed to build a biometric pipeline that achieves high accuracy while being computationally efficient. Practical document analysis requires fast, localized processing. Therefore, we created the \textbf{DPE-Net (Dual-Path Patch Encoder)}, a custom architecture designed for minimal computational load and quick inference without losing verification performance.
+To extract distinct features from the processed handwriting patches, we aimed to build a biometric pipeline that achieves high accuracy while being computationally efficient. Practical document analysis requires fast, localized processing. Therefore, we created the DPE-Net (Dual-Path Patch Encoder), a custom architecture designed for minimal computational load and quick inference without losing verification performance.
 
-Alongside our custom network, we thoroughly tested several modern State-of-the-Art (SOTA) architectures to set a comparative baseline. Among them, the pretrained \textbf{FasterNet-T0} stood out as a strong alternative that also meets high-speed deployment needs.
+Alongside our custom network, we thoroughly tested several modern State-of-the-Art (SOTA) architectures to set a comparative baseline. Among them, the pretrained FasterNet-T0 stood out as a strong alternative that also meets high-speed deployment needs.
 
 To rigorously check these models’ practicality for large-scale analysis, we measured architectural complexity (Total Parameters, FLOPs) and processing speed (Inference Latency per Line) against Line-Level Accuracy and AUC to ensure dependable biometric verification. The detailed comparative results of these architectures can be found in Section \ref{subsec:architectural_benchmarking} (Table \ref{tab:table1}). The isolated study of our custom architecture's internal components is provided in Section \ref{subsubsec:architecture_pooling} (Table \ref{tab:table3}).
 
@@ -343,6 +355,7 @@ To rigorously check these models’ practicality for large-scale analysis, we me
 
 \subsubsection{DPE-Net (Dual-Path Patch Encoder) Model Architecture}
 \label{subsubsec:dpenet}
+
 
 To capture both the fine details of ink deposition and the overall flow of handwriting, we designed a custom Dual-Path Convolutional Neural Network, as shown in Figure~\ref{fig:architecture_integrated}. Instead of relying on deep, parameter-heavy sequential layers, this architecture employed two parallel branches that processed a shared initial feature map.
 
@@ -436,7 +449,7 @@ To optimize the feature extraction capabilities of our patch encoder, we used a 
 % \end{figure}
 
 
-To train the network, we utilized a \textbf{Triplet Siamese Architecture\cite{b26,b27}}. During each training step, the model processed three distinct handwriting samples simultaneously: an Anchor ($x_a$), a Positive ($x_p$), and a Negative ($x_n$). The Anchor and Positive samples were distinct lines drawn from the same writer, while the Negative sample was drawn from a different, randomly selected writer. 
+To train the network, we utilized a Triplet Siamese Architecture\cite{b26,b27}. During each training step, the model processed three distinct handwriting samples simultaneously: an Anchor ($x_a$), a Positive ($x_p$), and a Negative ($x_n$). The Anchor and Positive samples were distinct lines drawn from the same writer, while the Negative sample was drawn from a different, randomly selected writer. 
 
 Following the feature aggregation step described in Section \ref{subsubsec:dpenet}, the network output $L_2$-normalized line-level embeddings for each branch, denoted as $\hat{v}_a$, $\hat{v}_p$, and $\hat{v}_n$, respectively. 
 
@@ -455,7 +468,7 @@ where $B$ represents the batch size, and $\alpha = 0.4$ enforces a strict margin
 
 To avoid data leakage and ensure the model could generalize, we divided the training dataset into an 80/20 writer-disjoint setup (\verb|val_split_by_writers = 0.2|). During training, each handwriting line was dynamically represented by randomly sampling $K = 8$ spatial patches (\verb|patches_per_line = 8|). This random sampling served as a strong form of spatial data augmentation, preventing the network from memorizing fixed sequence locations.
 
-The model was optimized using the \textbf{Adam optimizer} with an initial learning rate of $\eta = 0.0005$. To dynamically adjust the learning rate as the model converged, we implemented a \verb|ReduceLROnPlateau| learning rate scheduler monitoring the validation loss. The scheduler was configured to halve the learning rate (factor of $0.5$) if the validation loss plateaued for 3 consecutive epochs, down to a minimum bound of $10^{-6}$.
+The model was optimized using the \verb|Adam optimizer| with an initial learning rate of $\eta = 0.0005$. To dynamically adjust the learning rate as the model converged, we implemented a \verb|ReduceLROnPlateau| learning rate scheduler monitoring the validation loss. The scheduler was configured to halve the learning rate (factor of $0.5$) if the validation loss plateaued for 3 consecutive epochs, down to a minimum bound of $10^{-6}$.
 
 To maximize efficiency on our NVIDIA RTX 3050 GPU, we trained the network with a batch size of $64$ triplets. We also enabled Automatic Mixed Precision (AMP) through PyTorch's \verb|GradScaler|, which computes gradients in \verb|float16| while keeping \verb|float32| weight updates. This method significantly reduced VRAM usage without losing stability.
 
@@ -527,10 +540,10 @@ Because all feature vectors are $L_2$-normalized prior to distance calculation, 
 
 To quantitatively assess the framework's verification performance, we defined the standard binary classification outcomes specifically in the context of writer pairing:
 \begin{itemize}
-    \item \textbf{True Positives ($TP$):} Same-writer pairs correctly classified as a match ($D_{cos} \le t$).
-    \item \textbf{True Negatives ($TN$):} Different-writer pairs correctly classified as non-matches ($D_{cos} > t$).
-    \item \textbf{False Positives ($FP$):} Different-writer pairs incorrectly classified as a match (False Acceptance).
-    \item \textbf{False Negatives ($FN$):} Same-writer pairs incorrectly classified as non-matches (False Rejection).
+    \item True Positives ($TP$): Same-writer pairs correctly classified as a match ($D_{cos} \le t$).
+    \item True Negatives ($TN$): Different-writer pairs correctly classified as non-matches ($D_{cos} > t$).
+    \item False Positives ($FP$): Different-writer pairs incorrectly classified as a match (False Acceptance).
+    \item False Negatives ($FN$): Same-writer pairs incorrectly classified as non-matches (False Rejection).
 \end{itemize}
 
 Based on these defined biometric pairing outcomes, the primary performance metrics are mathematically formulated as follows:
@@ -618,7 +631,7 @@ mAP = \frac{1}{|\mathcal{Q}|} \sum_{q \in \mathcal{Q}} AP_q
 \subsection{Handwriting-Based Document Clustering}
 \label{subsec:document_clustering}
 
-In unsupervised document clustering, an investigator is presented with a large, unlabelled corpus of documents and must autonomously group them such that each distinct cluster corresponds to a unique, unknown author. To execute this, we leveraged the global page-level embeddings extracted by our hierarchical pipeline mentioned in section \ref{subsec:hierarchical_aggregation}, independently benchmarking the latent spaces generated by both our custom \textbf{DPE-Net} and the pretrained \textbf{FasterNet-T0}.
+In unsupervised document clustering, an investigator is presented with a large, unlabelled corpus of documents and must autonomously group them such that each distinct cluster corresponds to a unique, unknown author. To execute this, we leveraged the global page-level embeddings extracted by our hierarchical pipeline mentioned in section \ref{subsec:hierarchical_aggregation}, independently benchmarking the latent spaces generated by both our custom DPE-Net and the pretrained FasterNet-T0.
 
 \subsubsection{Algorithm Selection and Distance Formulation}
 \label{subsubsec:clustering_algorithm}
@@ -630,13 +643,13 @@ M_{dist}(i, j) = 1 - (\hat{V}_i \cdot \hat{V}_j)
 \label{eq:clustering_distance}
 \end{equation}
 
-To partition this distance space, we evaluated multiple unsupervised clustering methodologies. As detailed in the ablation study in Section \ref{subsubsec:clustering_ablation} (Table \ref{tab:table6}), \textbf{Agglomerative Hierarchical Clustering} outperformed density-based algorithms such as DBSCAN. 
+To partition this distance space, we evaluated multiple unsupervised clustering methodologies. As detailed in the ablation study in Section \ref{subsubsec:clustering_ablation} (Table \ref{tab:table6}), Agglomerative Hierarchical Clustering outperformed density-based algorithms such as DBSCAN. 
 
-We applied Agglomerative Clustering using \textbf{average linkage}, which merges pairs of clusters based on the average cosine distance between all respective member embeddings. Rather than forcing the algorithm to find a predefined number of clusters ($k$), we controlled the cluster formation dynamically using a maximum distance threshold ($\tau_{cluster}$). If the average distance between two clusters exceeded $\tau_{cluster}$, the merging process halted. 
+We applied Agglomerative Clustering using average linkage, which merges pairs of clusters based on the average cosine distance between all respective member embeddings. Rather than forcing the algorithm to find a predefined number of clusters ($k$), we controlled the cluster formation dynamically using a maximum distance threshold ($\tau_{cluster}$). If the average distance between two clusters exceeded $\tau_{cluster}$, the merging process halted. 
 
 Pairwise accuracy was chosen as the main tuning metric because it ensures that the resulting clusters keep strong biometric purity for real-world use.
 
-Because the geometric distribution of the latent space naturally varies between different neural architectures, this optimal stopping threshold was determined independently for each feature encoder. By executing a comprehensive threshold sweep on the disjoint tuning cohort, we selected the thresholds that maximized pairwise Accuracy—yielding $\tau_{cluster} = 0.150$ for the \textbf{DPE-Net} and $\tau_{cluster} = 0.110$ for the \textbf{FasterNet-T0.}
+Because the geometric distribution of the latent space naturally varies between different neural architectures, this optimal stopping threshold was determined independently for each feature encoder. By executing a comprehensive threshold sweep on the disjoint tuning cohort, we selected the thresholds that maximized pairwise Accuracy—yielding $\tau_{cluster} = 0.150$ for the DPE-Net and $\tau_{cluster} = 0.110$ for the FasterNet-T0.
 
 \subsubsection{Clustering Evaluation Metrics}
 \label{subsubsec:clustering_metrics}
@@ -671,10 +684,10 @@ While ARI and NMI evaluate global dataset structure, real-world application dema
 
 By evaluating the upper triangular elements of these matrices (representing all $\frac{N(N-1)}{2}$ unique document combinations), we redefined the standard classification outcomes for the clustering domain:
 \begin{itemize}
-    \item \textbf{True Positives ($TP$):} Documents by the same writer correctly placed in the same cluster.
-    \item \textbf{True Negatives ($TN$):} Documents by different writers correctly placed in different clusters.
-    \item \textbf{False Positives ($FP$):} Documents by different writers incorrectly grouped into the same cluster.
-    \item \textbf{False Negatives ($FN$):} Documents by the same writer incorrectly separated into different clusters.
+    \item True Positives ($TP$): Documents by the same writer correctly placed in the same cluster.
+    \item True Negatives ($TN$): Documents by different writers correctly placed in different clusters.
+    \item False Positives ($FP$): Documents by different writers incorrectly grouped into the same cluster.
+    \item False Negatives ($FN$): Documents by the same writer incorrectly separated into different clusters.
 \end{itemize}
 
 Using these clustering-specific outcomes, we computed the pairwise metrics utilizing the standard formulas:
@@ -725,7 +738,7 @@ This dataset was designed to strictly test the algorithm's ability to track chro
 
 Let a synthesized multi-writer page yield a chronological, top-to-bottom sequence of valid handwriting lines, $L = \{l_1, l_2, \dots, l_K\}$. Passing these lines through our hierarchical pipeline (using either DPE-Net or FasterNet-T0) generates a corresponding sequence of $L_2$-normalized line embeddings, $E = \{\hat{v}_1, \hat{v}_2, \dots, \hat{v}_K\}$.
 
-To cluster these sequential embeddings into contiguous writer blocks, we evaluated multiple unsupervised clustering algorithms. As detailed in the ablation study in Section \ref{subsubsec:sequential_ablation} (Table \ref{tab:table7}), we compared \textbf{DBSCAN}  against the Agglomerative Clustering. DBSCAN proved superior for sequential segmentation. While Agglomerative Clustering forces all embeddings into discrete groups regardless of transitional ambiguity, DBSCAN’s density-reachability logic inherently isolates ambiguous line boundaries as "noise" (label $-1$), naturally forming highly stable, contiguous spatial blocks for the core handwriting text.
+To cluster these sequential embeddings into contiguous writer blocks, we evaluated multiple unsupervised clustering algorithms. As detailed in the ablation study in Section \ref{subsubsec:sequential_ablation} (Table \ref{tab:table7}), we compared DBSCAN  against the Agglomerative Clustering. DBSCAN proved superior for sequential segmentation. While Agglomerative Clustering forces all embeddings into discrete groups regardless of transitional ambiguity, DBSCAN’s density-reachability logic inherently isolates ambiguous line boundaries as "noise" (label $-1$), naturally forming highly stable, contiguous spatial blocks for the core handwriting text.
 
 The raw chronological cluster assignments generated by DBSCAN, denoted as $C_{raw} = \{c_1, c_2, \dots, c_K\}$, were subsequently processed through a two-stage sequential reconstruction pipeline:
 
@@ -742,8 +755,8 @@ Because DBSCAN relies heavily on density thresholds, its performance is highly s
 
 We performed an exhaustive multidimensional grid search to minimize the sequence error. The optimal parameters were determined as follows:
 \begin{itemize}
-    \item \textbf{For DPE-Net:} $\epsilon = 0.09$, $\mu_{samples} = 3$, and $w_{size} = 5$.
-    \item \textbf{For FasterNet-T0:} $\epsilon = 0.10$, $\mu_{samples} = 2$, and $w_{size} = 5$.
+    \item For DPE-Net: $\epsilon = 0.09$, $\mu_{samples} = 3$, and $w_{size} = 5$.
+    \item For FasterNet-T0: $\epsilon = 0.10$, $\mu_{samples} = 2$, and $w_{size} = 5$.
 \end{itemize}
 
 The stabilization of both models at $w_{size} = 5$ confirms that DBSCAN inherently produces contiguous groupings that require only minimal local smoothing, circumventing the need for aggressive post-hoc corrections.
@@ -751,7 +764,7 @@ The stabilization of both models at $w_{size} = 5$ confirms that DBSCAN inherent
 \subsubsection{Sequence Evaluation Metrics}
 \label{subsubsec:sequence_evaluation}
 
-To quantitatively evaluate the success of the sequential segmentation, we measured the deviation between the predicted chronological sequence $S_{pred}$ and the ground-truth sequence $S_{gt}$ using the \textbf{Levenshtein Distance ($LD$)}. 
+To quantitatively evaluate the success of the sequential segmentation, we measured the deviation between the predicted chronological sequence $S_{pred}$ and the ground-truth sequence $S_{gt}$ using the Levenshtein Distance ($LD$). 
 
 The Levenshtein Distance calculates the minimum number of single-element edit operations (insertions, deletions, or substitutions) required to perfectly transform the predicted sequence into the ground-truth sequence. Based on this edit distance, we reported two primary metrics:
 
@@ -923,7 +936,7 @@ Raw Grayscale Inputs (No Preprocessing) & 81.50\% & 0.9015 & -1.90\% \\
 
 
 
-As demonstrated in Table~\ref{tab:table2}, bypassing preprocessing forces the model to process dataset-specific artifacts (e.g., shadows, scanner noise), causing a significant performance drop. The proposed pipeline standardizes stroke geometry and eliminates background noise, yielding a definitive \textbf{+1.90\%} accuracy increase.
+As demonstrated in Table~\ref{tab:table2}, bypassing preprocessing forces the model to process dataset-specific artifacts (e.g., shadows, scanner noise), causing a significant performance drop. The proposed pipeline standardizes stroke geometry and eliminates background noise, yielding a definitive +1.90\% accuracy increase.
 
 \subsubsection{Model Architecture and Feature Pooling}
 \label{subsubsec:architecture_pooling}
@@ -1175,14 +1188,14 @@ The final evaluation was conducted on a completely disjoint cohort of 32 unseen 
 \begin{figure}[t!]
 \centering
 \includegraphics[width=\columnwidth]{fig/Complete_New_CNN_DPE_NET_line.png}
-\caption{Dynamic Threshold Sweep and Break-Even Evaluation: DPE-Net (Line-Level).}
+\caption{Dynamic Threshold Sweep and Break\-Even Evaluation: DPE\-Net (Line\-Level).}
 \label{fig:Complete_New_CNN_DPE_NET_line}
 \end{figure}
 
 \begin{figure}[t!]
 \centering
 \includegraphics[width=\columnwidth]{fig/Complete_fastnet_t0_line.png}
-\caption{Dynamic Threshold Sweep and Break-Even Evaluation: FasterNet-T0 (Line-Level).}
+\caption{Dynamic Threshold Sweep and Break-Even Evaluation: FasterNet\-T0 (Line\-Level).}
 \label{fig:Complete_fastnet_t0_line}
 \end{figure}
 
@@ -1190,7 +1203,7 @@ The final evaluation was conducted on a completely disjoint cohort of 32 unseen 
 \begin{figure}[t!]
 \centering
 \includegraphics[width=\columnwidth]{fig/Complete_New_CNN_DPE_NET_page_level.png}
-\caption{Dynamic Threshold Sweep and Break-Even Evaluation: DPE-Net (Page-Level).}
+\caption{Dynamic Threshold Sweep and Break-Even Evaluation: DPE\-Net (Page\-Level).}
 \label{fig:Complete_New_CNN_DPE_NET_page_level}
 \end{figure}
 
@@ -1234,13 +1247,15 @@ The writer-based document retrieval evaluation (1:N search) was conducted on a c
 
 The retrieval performance was assessed by calculating the Cosine Distance between the global page embeddings to sort the ranked lists. The final retrieval metrics are summarized in Table~\ref{tab:table10}.
 
-\begin{table}[htbp]
+\begin{table*}[htbp]
 \caption{Writer-Based Document Retrieval Results.}
 \label{tab:table10}
 \centering
-\resizebox{\columnwidth}{!}{%
 \renewcommand{\arraystretch}{1.2}
-\begin{tabular}{|l|l|l|l|}
+\setlength{\tabcolsep}{6pt}
+\small
+
+\begin{tabular}{|l|c|c|c|}
 \hline
 \textbf{Architecture} & \textbf{Top-1 Accuracy} & \textbf{Top-5 Accuracy} & \textbf{Mean Average Precision (mAP)} \\
 \hline
@@ -1248,9 +1263,9 @@ The retrieval performance was assessed by calculating the Cosine Distance betwee
 \hline
 \textbf{FasterNet-T0} & 100.00\% & 100.00\% & 96.60\% \\
 \hline
-\end{tabular}%
-}
-\end{table}
+\end{tabular}
+
+\end{table*}
 
 \subsection{Handwriting-Based Document Clustering Evaluation Results}
 \label{subsec:clustering_eval}
@@ -1327,6 +1342,9 @@ FasterNet-T0 achieved an Absolute Sequence Accuracy of 79.38\% and a final evalu
 
 
 
+
+
+
 \section{Discussion and Conclusion}
 \label{sec:discussion_conclusion}
 
@@ -1347,12 +1365,6 @@ Furthermore, expanding the analysis to sequential multi-writer segmentation reve
 \clearpage
 
 
-\appendices
-
-
-
-
-\section*{Acknowledgment}
 
 
 
@@ -1419,50 +1431,22 @@ Furthermore, expanding the analysis to sequential multi-writer segmentation reve
 
 \end{thebibliography}
 
-\begin{IEEEbiography}[{\includegraphics[width=1in,height=1.25in,clip,keepaspectratio]{fig/a1.jpeg}}]{First A. Author} (M'76\-\-SM'81\-\-F'87) and all authors may include 
-biographies. Biographies are often not included in conference-related
-papers. This author became a Member (M) of IEEE in 1976, a Senior
-Member (SM) in 1981, and a Fellow (F) in 1987. The first paragraph may
-contain a place and/or date of birth (list place, then date). Next,
-the author's educational background is listed. The degrees should be
-listed with type of degree in what field, which institution, city,
-state, and country, and year the degree was earned. The author's major
-field of study should be lower-cased. 
 
-The second paragraph uses the pronoun of the person (he or she) and not the 
-author's last name. It lists military and work experience, including summer 
-and fellowship jobs. Job titles are capitalized. The current job must have a 
-location; previous positions may be listed 
-without one. Information concerning previous publications may be included. 
-Try not to list more than three books or published articles. The format for 
-listing publishers of a book within the biography is: title of book 
-(publisher name, year) similar to a reference. Current and previous research 
-interests end the paragraph. The third paragraph begins with the author's 
-title and last name (e.g., Dr.\ Smith, Prof.\ Jones, Mr.\ Kajor, Ms.\ Hunter). 
-List any memberships in professional societies other than the IEEE. Finally, 
-list any awards and work for IEEE committees and publications. If a 
-photograph is provided, it should be of good quality, and 
-professional-looking. Following are two examples of an author's biography.
+
+\begin{IEEEbiography}[{\includegraphics[width=1in,height=1.25in,clip,keepaspectratio]{fig/a1.jpeg}}]{Arfatul Islam Asif}
+was born in Moulvibazar, Sylhet, Bangladesh, in 2001. He is currently pursuing the B.Sc. degree in computer science and engineering at the Shahjalal University of Science and Technology (SUST), Sylhet, Bangladesh, where he is conducting his undergraduate thesis under the supervision of Prof. M. Shahidur Rahman.
+
+He is highly active in collegiate competitive programming, achieving top placements at both the regional and continental levels. He has also secured top rankings in numerous national and international academic hackathons. 
+
+His current research interests include computer vision, pattern recognition, natural language processing, audio processing, algorithmic efficiency, and embedded systems.
 \end{IEEEbiography}
 
-\begin{IEEEbiography}[{\includegraphics[width=1in,height=1.25in,clip,keepaspectratio]{a2.png}}]{Second B. Author} was born in Greenwich Village, New York, NY, USA in 
-1977. He received the B.S. and M.S. degrees in aerospace engineering from 
-the University of Virginia, Charlottesville, in 2001 and the Ph.D. degree in 
-mechanical engineering from Drexel University, Philadelphia, PA, in 2008.
+\begin{IEEEbiography}[{\includegraphics[width=1in,height=1.25in,clip,keepaspectratio]{fig/a2.jpeg}}]{Sanjoy Das Joy}
+was born in Sylhet, Bangladesh, in 2001. He is currently pursuing the B.Sc. degree in computer science and engineering at the Shahjalal University of Science and Technology (SUST), Sylhet, Bangladesh, where he is conducting his undergraduate thesis under the supervision of Prof. M. Shahidur Rahman.
 
-From 2001 to 2004, he was a Research Assistant with the Princeton Plasma 
-Physics Laboratory. Since 2009, he has been an Assistant Professor with the 
-Mechanical Engineering Department, Texas A{\&}M University, College Station. 
-He is the author of three books, more than 150 articles, and more than 70 
-inventions. His research interests include high-pressure and high-density 
-nonthermal plasma discharge processes and applications, microscale plasma 
-discharges, discharges in liquids, spectroscopic diagnostics, plasma 
-propulsion, and innovation plasma applications. He is an Associate Editor of 
-the journal \emph{Earth, Moon, Planets}, and holds two patents. 
+He has a strong record in university-level deep learning challenges. His academic project work focuses on applying deep learning and AI integrations to solve practical problems, such as automated academic management systems and biomedical applications. 
 
-Dr. Author was a recipient of the International Association of Geomagnetism 
-and Aeronomy Young Scientist Award for Excellence in 2008, and the IEEE 
-Electromagnetic Compatibility Society Best Symposium Paper Award in 2011. 
+His research interests encompass computer vision, pattern recognition, biomedical signal processing, multi-modal learning, and embedded systems.
 \end{IEEEbiography}
 
 
