@@ -810,7 +810,7 @@ When designing for strictly limited computational resources, such as edge device
 ResNet-18 &
 \makecell{MobileNetV4\\(Conv-S)} &
 
-FasterNet-T0 &
+\textbf{FasterNet-T0} &
 ViT-Tiny &
 \makecell{EdgeNeXt\\-XXS} &
 
@@ -819,7 +819,7 @@ EffiViT-M0 &
 \makecell{Single-Path CNN\\(Strided + GAP)} &
 \makecell{EdgeNeXt-XXS\\Single-Path} &
 \makecell{FasterNet-T0\\Single-Path} &
-DPE-Net \\
+\textbf{DPE-Net} \\
 
 \hline
 
@@ -880,41 +880,7 @@ CNN & Mobile CNN & \textbf{Low-Lat CNN} & Transformer & Hybrid & Hybrid & CNN & 
 
 
 
-\begin{table*}[htbp]
-\caption{Architectural Benchmarking on Writer Verification (100-Writer Cohort, Line-Level).}
-\label{tab:table1}
-\centering
-\resizebox{\textwidth}{!}{%
-\renewcommand{\arraystretch}{1.2}
-\begin{tabular}{|l|l|l|l|l|l|l|l|l|l|l|l|l|}
-\hline
-\textbf{Architecture} & \textbf{Paradigm} & \textbf{Total Params} & \textbf{FLOPs (MACs) per patch} & \textbf{Epoch Time} & \textbf{Best / Total Epochs} & \textbf{Inference / Line} & \textbf{Eval Threshold} & \textbf{Line Acc.} & \textbf{Line AUC} & \textbf{Line Prec.} & \textbf{Line Rec.} & \textbf{Line F1} \\
-\hline
-Pretrained ResNet-18 & Classic CNN & 11.43 M & 568.39 M & 10.16 min & 17 / 20 & 3.45 ms & 0.422 & 89.00\% & 96.66\% & 89.00\% & 89.00\% & 0.8900 \\
-\hline
-Pretrained MobileNetV4 (Conv-S) & Mobile CNN & 3.14 M & 60.74 M & 8.68 min & 12 / 20 & 4.13 ms & 0.383 & 86.60\% & 93.84\% & 86.60\% & 86.60\% & 0.8660 \\
-\hline
-\textbf{Pretrained FasterNet-T0} & \textbf{Low-Latency CNN} & \textbf{3.27 M} & \textbf{109.58 M} & \textbf{6.85 min} & \textbf{10 / 20} & \textbf{3.44 ms} & \textbf{0.408} & \textbf{90.00\%} & \textbf{96.76\%} & \textbf{90.00\%} & \textbf{90.00\%} & \textbf{0.9000} \\
-\hline
-Pretrained ViT-Tiny & Pure Transformer & 5.49 M & 349.85 M & 25.62 min & 20 / 20 & 5.82 ms & 0.346 & 89.80\% & 96.19\% & 89.80\% & 89.80\% & 0.8980 \\
-\hline
-Pretrained EdgeNeXt-XXS & Hybrid (Edge) & 1.24 M & 64.74 M & 10.85 min & 17 / 20 & 6.06 ms & 0.362 & 89.10\% & 95.85\% & 89.18\% & 89.00\% & 0.8909 \\
-\hline
-Pretrained EfficientViT-M0 & Hybrid (Speed) & 2.25 M & 79.13 M & 15.49 min & 17 / 20 & 21.90 ms & 0.483 & 87.80\% & 95.22\% & 87.80\% & 87.80\% & 0.8780 \\
-\hline
-Single-Path CNN (MaxPool + Dense) & Custom CNN & 8.61 M & 164.23 M & 14.78 min & 18 / 20 & 1.94 ms & 0.301 & 83.10\% & 90.46\% & 83.03\% & 83.20\% & 0.8312 \\
-\hline
-Single-Path CNN (Strided + GAP) & Custom CNN & 0.15 M & 39.49 M & 2.86 min & 18 / 20 & 0.53 ms & 0.240 & 82.60\% & 92.08\% & 82.60\% & 82.60\% & 0.8260 \\
-\hline
-Pretrained EdgeNeXt-XXS + Single-Path & Hybrid & 1.42 M & 104.24 M & 19.77 min & 18 / 20 & 10.50 ms & 0.343 & 88.50\% & 95.42\% & 88.58\% & 88.40\% & 0.8849 \\
-\hline
-Pretrained FasterNet-T0 + Single-Path & Hybrid & 3.02 M & 148.66 M & 9.31 min & 17 / 20 & 5.82 ms & 0.224 & 89.40\% & 96.26\% & 89.40\% & 89.40\% & 0.8940 \\
-\hline
-\textbf{Proposed: DPE-Net} & \textbf{Custom CNN} & \textbf{0.1775 M} & \textbf{58.49 M} & \textbf{2.94 min} & \textbf{18 / 20} & \textbf{0.70 ms} & \textbf{0.258} & \textbf{83.40\%} & \textbf{92.50\%} & \textbf{83.40\%} & \textbf{83.40\%} & \textbf{0.8340} \\
-\hline
-\end{tabular}%
-}
-\end{table*}
+
 
 
 
@@ -1293,23 +1259,41 @@ To evaluate the unsupervised clustering capabilities of the framework, Agglomera
 
 The final clustering evaluation was executed on the isolated test cohort comprising 138 pages across 12 ground-truth writers (404–415). The results, encompassing both global partitioning metrics (ARI, NMI) and pairwise assignment metrics, are presented in Table~\ref{tab:table11}.
 
+
+
 \begin{table*}[htbp]
 \caption{Unsupervised Document Clustering Results.}
 \label{tab:table11}
 \centering
-\resizebox{\textwidth}{!}{%
-\renewcommand{\arraystretch}{1.2}
-\begin{tabular}{|l|l|l|l|l|l|l|l|l|}
+\renewcommand{\arraystretch}{1.15}
+\scriptsize
+\setlength{\tabcolsep}{2.2pt}
+
+\begin{tabular}{|l|c|c|c|c|c|c|c|c|}
 \hline
-\textbf{Architecture} & \textbf{Distance Threshold ($\tau_{cluster}$)} & \textbf{Clusters Formed} & \textbf{Adjusted Rand Index (ARI)} & \textbf{Normalized Mutual Info (NMI)} & \textbf{Pairwise Accuracy} & \textbf{Pairwise Precision} & \textbf{Pairwise Recall} & \textbf{Pairwise F1-Score} \\
+
+\textbf{Architecture} &
+\textbf{\makecell{Distance\\Threshold ($\tau_{cluster}$)}} &
+\textbf{\makecell{Clusters\\Formed}} &
+\textbf{\makecell{Adjusted Rand\\Index (ARI)}} &
+\textbf{\makecell{Normalized Mutual\\Info (NMI)}} &
+\textbf{\makecell{Pairwise\\Accuracy}} &
+\textbf{\makecell{Pairwise\\Precision}} &
+\textbf{\makecell{Pairwise\\Recall}} &
+\textbf{\makecell{Pairwise\\F1-Score}} \\
+
 \hline
+
 \textbf{DPE-Net} & 0.150 & 19 & 0.7865 & 0.9000 & 96.03\% & 0.7857 & 0.8328 & 0.8086 \\
 \hline
+
 \textbf{FasterNet-T0} & 0.110 & 22 & 0.9198 & 0.9445 & 98.64\% & 1.0000 & 0.8644 & 0.9272 \\
 \hline
-\end{tabular}%
-}
+
+\end{tabular}
 \end{table*}
+
+
 
 FasterNet-T0 partitioned the evaluation corpus into 22 distinct clusters, resulting in a 0.9198 ARI and a 98.64\% pairwise accuracy. DPE-Net partitioned the dataset into 19 clusters, resulting in a 0.7865 ARI and a 96.03\% pairwise accuracy.
 
@@ -1435,7 +1419,7 @@ Furthermore, expanding the analysis to sequential multi-writer segmentation reve
 
 \end{thebibliography}
 
-\begin{IEEEbiography}[{\includegraphics[width=1in,height=1.25in,clip,keepaspectratio]{a1.png}}]{First A. Author} (M'76\-\-SM'81\-\-F'87) and all authors may include 
+\begin{IEEEbiography}[{\includegraphics[width=1in,height=1.25in,clip,keepaspectratio]{fig/a1.jpeg}}]{First A. Author} (M'76\-\-SM'81\-\-F'87) and all authors may include 
 biographies. Biographies are often not included in conference-related
 papers. This author became a Member (M) of IEEE in 1976, a Senior
 Member (SM) in 1981, and a Fellow (F) in 1987. The first paragraph may
@@ -1481,23 +1465,23 @@ and Aeronomy Young Scientist Award for Excellence in 2008, and the IEEE
 Electromagnetic Compatibility Society Best Symposium Paper Award in 2011. 
 \end{IEEEbiography}
 
-\begin{IEEEbiography}[{\includegraphics[width=1in,height=1.25in,clip,keepaspectratio]{a3.png}}]{Third C. Author, Jr.} (M'87) received the B.S. degree in mechanical 
-engineering from National Chung Cheng University, Chiayi, Taiwan, in 2004 
-and the M.S. degree in mechanical engineering from National Tsing Hua 
-University, Hsinchu, Taiwan, in 2006. He is currently pursuing the Ph.D. 
-degree in mechanical engineering at Texas A{\&}M University, College 
-Station, TX, USA.
 
-From 2008 to 2009, he was a Research Assistant with the Institute of 
-Physics, Academia Sinica, Tapei, Taiwan. His research interest includes the 
-development of surface processing and biological/medical treatment 
-techniques using nonthermal atmospheric pressure plasmas, fundamental study 
-of plasma sources, and fabrication of micro- or nanostructured surfaces. 
 
-Mr. Author's awards and honors include the Frew Fellowship (Australian 
-Academy of Science), the I. I. Rabi Prize (APS), the European Frequency and 
-Time Forum Award, the Carl Zeiss Research Award, the William F. Meggers 
-Award and the Adolph Lomb Medal (OSA).
+\begin{IEEEbiography}[{\includegraphics[width=1in,height=1.25in,clip,keepaspectratio]{fig/a3.jpg}}]{M. SHAHIDUR RAHMAN} (Senior Member,
+IEEE) was born in Jamalpur, Bangladesh, in 1975.
+He received the B.Sc. and M.Sc. degrees in electronics and computer science from the Shahjalal
+University of Science and Technology, Sylhet,
+Bangladesh, in 1995 and 1997, respectively, and
+the Ph.D. degree in mathematical information systems from Saitama University, Saitama, Japan,
+in 2006. He began teaching with the Department
+of Computer Science and Engineering, Shahjalal
+University of Science and Technology, in 1997, where he is currently a
+Professor. He was a JSPS Postdoctoral Research Fellow at Saitama University, from 2009 to 2011. His research interests include voice analysis,
+speech synthesis, speech recognition, bone-conducted speech augmentation,
+and digital signal processing.
+
+
+
 \end{IEEEbiography}
 
 \EOD
