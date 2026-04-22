@@ -1,4 +1,4 @@
-# AUnified Framework for Open-Set Bengali Handwriting Analysis
+# A Unified Framework for Open-Set Bengali Handwriting Analysis:
 
 
 
