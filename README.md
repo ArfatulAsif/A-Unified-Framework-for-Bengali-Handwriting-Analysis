@@ -318,7 +318,7 @@ We saved trained models and best check points during epochs.
 
 
 ```bash
-python -m use_model.predict --config config.yml --img_a ./path/to/img1.jpg --img_b ./path/to/img2.jpg
+python -m line_comparison.predict --config config.yml --img_a ./path/to/img1.jpg --img_b ./path/to/img2.jpg
 ```
 
 
