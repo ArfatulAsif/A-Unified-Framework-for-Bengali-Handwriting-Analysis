@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
-# /clustering/evaluate_clustering.py
+# /Clustering_Agglomerative/evaluate_agglomerative.py
+
+# python -m Clustering_Agglomerative.evaluate_agglomerative
+
 from __future__ import annotations
 
 import yaml
@@ -13,10 +16,12 @@ from sklearn.metrics import (
     confusion_matrix,
     precision_recall_fscore_support,
     roc_auc_score,
+    adjusted_rand_score,
+    normalized_mutual_info_score
 )
 
 from page.page_embedding import load_patch_encoder, embed_page
-from clustering.cluster import cluster_pages_dbscan
+from Clustering_Agglomerative.cluster import cluster_pages_agglomerative
 
 def set_seeds(seed: int):
     import random as pyrand
@@ -26,7 +31,6 @@ def set_seeds(seed: int):
         torch.cuda.manual_seed_all(seed)
 
 def index_writer_pages(root: Path) -> Dict[str, List[Path]]:
-    """Expect: root/<writer_id>/*.(png|jpg|jpeg|tif|bmp)"""
     writers: Dict[str, List[Path]] = {}
     for wdir in sorted(p for p in root.iterdir() if p.is_dir()):
         imgs: List[Path] = []
@@ -36,20 +40,9 @@ def index_writer_pages(root: Path) -> Dict[str, List[Path]]:
             writers[wdir.name] = imgs
     return writers
 
-def distance(e1: np.ndarray, e2: np.ndarray, metric: str) -> float:
-    return 1.0 - float(np.dot(e1, e2)) if metric == "cosine" else float(np.linalg.norm(e1 - e2))
-
-def score_from_distance(dist: float, metric: str) -> float:
-    """Higher score = more likely same-writer (needed for AUC)."""
-    return (1.0 - dist) if metric == "cosine" else (-dist)
-
 def pairs_from_clusters(labels: np.ndarray) -> np.ndarray:
-    """
-    Build a binary matrix P where P[i,j]=1 iff labels[i]==labels[j] and label!=-1 (same cluster, not noise).
-    """
     same = (labels[:, None] == labels[None, :])
-    not_noise = (labels[:, None] != -1) & (labels[None, :] != -1)
-    return (same & not_noise).astype(int)
+    return same.astype(int)
 
 def main():
     cfg = yaml.safe_load(open("config.yml", "r"))
@@ -57,15 +50,11 @@ def main():
     set_seeds(seed)
 
     metric = cfg["evaluation_page"]["metric"]
-    # DBSCAN params (add to your config if you want; here we give sensible defaults)
-    eps = float(cfg.get("clustering", {}).get("eps", 0.35))
-    min_samples = int(cfg.get("clustering", {}).get("min_samples", 3))
+    
+    # Grab threshold from config (or default to something reasonable if not set)
+    distance_threshold = float(cfg.get("clustering", {}).get("eps", 0.20))
 
-    
-    
     page_root = Path(cfg["paths"]["Test_page_data"])
-
-
     wmap = index_writer_pages(page_root)
     if not wmap:
         raise SystemExit(f"No page data found under {page_root}")
@@ -73,7 +62,6 @@ def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     patch_encoder = load_patch_encoder(cfg, device)
 
-    # ---- Collect all pages and embed (with progress) ----
     all_items: List[Tuple[str, Path]] = []
     for wid, files in wmap.items():
         for p in files:
@@ -84,42 +72,30 @@ def main():
     y_writers: List[str] = []
     for wid, p in tqdm(all_items, desc="Embedding pages", unit="page"):
         e = embed_page(p, cfg, patch_encoder, device)
-        if e is None:
-            continue
+        if e is None: continue
         embs.append(e)
         y_writers.append(wid)
 
-    if len(embs) < 2:
-        raise SystemExit("Not enough embeddings for clustering.")
-
-    E = np.vstack(embs)     # (N,D)
+    E = np.vstack(embs)
     N = E.shape[0]
     print(f"Embeddings ready: {N}")
 
-    # ---- Cluster with DBSCAN ----
-    labels, clusters, D = cluster_pages_dbscan(E, metric=metric, eps=eps, min_samples=min_samples)
+    # ---- Cluster with Agglomerative ----
+    labels, clusters, D = cluster_pages_agglomerative(E, metric=metric, distance_threshold=distance_threshold)
     n_clusters = len(clusters)
-    n_noise = int(np.sum(labels == -1))
-    print(f"DBSCAN → clusters: {n_clusters}, noise pages: {n_noise}")
+    
+    # Calculate Global Clustering Metrics
+    ari = adjusted_rand_score(y_writers, labels)
+    nmi = normalized_mutual_info_score(y_writers, labels)
 
-    # ---- Evaluate cluster quality as pair classification ----
-    # Ground-truth pair labels: same writer?
+    # ---- Evaluate Pairwise ----
     y_true_pairs: List[int] = []
-    # Predictions from clustering: same cluster?
     y_pred_pairs: List[int] = []
-    # Continuous score from distance (for AUC)
     y_score_pairs: List[float] = []
 
-    # Precompute matrix for faster loop
-    pred_same_mat = pairs_from_clusters(labels)  # (N,N) binary
-    # distance matrix consistent with metric (use the one from clustering)
-    # Convert to score (higher = more similar)
-    if metric == "cosine":
-        y_score_mat = 1.0 - D
-    else:
-        y_score_mat = -D
+    pred_same_mat = pairs_from_clusters(labels) 
+    y_score_mat = (1.0 - D) if metric == "cosine" else (-D)
 
-    # Iterate i<j pairs
     for i in range(N):
         for j in range(i + 1, N):
             same_writer = 1 if y_writers[i] == y_writers[j] else 0
@@ -134,7 +110,6 @@ def main():
     y_pred = np.asarray(y_pred_pairs, dtype=int)
     y_score = np.asarray(y_score_pairs, dtype=float)
 
-    # Metrics
     acc = accuracy_score(y_true, y_pred)
     tn, fp, fn, tp = confusion_matrix(y_true, y_pred).ravel()
     prec, rec, f1, _ = precision_recall_fscore_support(y_true, y_pred, average="binary", zero_division=0)
@@ -145,12 +120,22 @@ def main():
     except Exception:
         auc = float("nan")
 
-    print("\n--- Clustering Evaluation (pairwise) ---")
-    print(f"Metric: {metric} | eps: {eps:.4f} | min_samples: {min_samples}")
-    print(f"Clusters: {n_clusters} | Noise: {n_noise} | Pages: {N}")
-    print(f"Accuracy: {acc:.4f} | Precision: {prec:.4f} | Recall: {rec:.4f} | F1: {f1:.4f} | AUC: {auc:.4f}")
-    print(f"TP: {tp}, TN: {tn}, FP: {fp}, FN: {fn}")
-    print(f"FPR: {fpr:.4f} | FNR: {fnr:.4f}")
+    print("\n" + "="*50)
+    print(" AGGLOMERATIVE CLUSTERING EVALUATION ")
+    print("="*50)
+    print(f"Metric: {metric} | distance_threshold: {distance_threshold:.4f}")
+    print(f"Clusters Formed: {n_clusters} | Total Pages: {N}")
+    print("-" * 50)
+    print(" GLOBAL METRICS (Academic Standard)")
+    print(f"Adjusted Rand Index (ARI) : {ari:.4f}")
+    print(f"Normalized Mutual Info    : {nmi:.4f}")
+    print("-" * 50)
+    print(" PAIRWISE METRICS (Real-World Application)")
+    print(f"Accuracy : {acc:.4f} | F1-Score: {f1:.4f}")
+    print(f"Precision: {prec:.4f} | Recall  : {rec:.4f}")
+    print(f"AUC      : {auc:.4f}")
+    print(f"TP: {tp:<5} TN: {tn:<5} FP: {fp:<5} FN: {fn:<5}")
+    print("="*50)
 
 if __name__ == "__main__":
     main()

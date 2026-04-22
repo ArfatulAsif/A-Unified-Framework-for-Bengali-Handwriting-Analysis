@@ -1,30 +1,21 @@
 # /retrieval/evaluate_retrieval.py
 
+# python -m retrieval.evaluate_retrieval
+
+
 
 from __future__ import annotations
 
 import yaml
-import random
 from pathlib import Path
 from typing import Dict, List, Tuple
 
 import numpy as np
 import torch
-from tqdm import tqdm, trange
-from sklearn.metrics import (
-    accuracy_score,
-    confusion_matrix,
-    precision_recall_fscore_support,
-    roc_auc_score,
-)
+from tqdm import tqdm
 
 # Use your page pipeline (this calls page.segment_lines under the hood)
 from page.page_embedding import load_patch_encoder, embed_page
-
-
-# -------- Configurable loop count for retrieval evaluation --------
-N_TRIALS = 20  # repeat retrieval with random references
-# -----------------------------------------------------------------
 
 
 def set_seeds(seed: int):
@@ -59,13 +50,19 @@ def distance(e1: np.ndarray, e2: np.ndarray, metric: str) -> float:
         return float(np.linalg.norm(e1 - e2))
 
 
-def score_from_distance(dist: float, metric: str) -> float:
-    """
-    AUC needs a score where higher = more likely positive (same writer).
-    For cosine distance: score = 1 - dist ∈ [-∞, 1], higher is more similar.
-    For L2: use negative distance so higher is more similar.
-    """
-    return (1.0 - dist) if metric == "cosine" else (-dist)
+def calculate_average_precision(ranked_labels: List[int], total_relevant: int) -> float:
+    """Calculates Average Precision (AP) for a single query."""
+    if total_relevant == 0:
+        return 0.0
+    
+    hits = 0
+    sum_precisions = 0.0
+    for i, label in enumerate(ranked_labels):
+        if label == 1:
+            hits += 1
+            sum_precisions += hits / (i + 1.0)
+            
+    return sum_precisions / total_relevant
 
 
 def main():
@@ -76,7 +73,6 @@ def main():
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     metric = cfg["evaluation_page"]["metric"]
-    threshold = float(cfg["evaluation_page"]["default_threshold"])
 
     test_root = Path(cfg["paths"]["Test_page_data"])
     wmap = index_writer_pages(test_root)
@@ -107,10 +103,11 @@ def main():
 
     for wid in wmap:
         writer_embs[wid] = []
+        
     for wid, p in tqdm(all_pages, desc="Embedding pages", unit="page"):
         emb = get_embed(p)
         if emb is None:
-            # Optional: skip pages with no lines detected
+            # Skip pages with no lines detected
             continue
         writer_embs[wid].append((p, emb))
 
@@ -125,55 +122,68 @@ def main():
 
     print(f"Page pool size (embedded): {len(pool)}")
 
-    # -------- Retrieval evaluation over multiple trials --------
-    y_true_all: List[int] = []
-    y_pred_all: List[int] = []
-    y_score_all: List[float] = []
+    # -------- Retrieval evaluation (Leave-One-Out Ranking) --------
+    print(f"\nRunning Full Database Retrieval (Queries: {len(pool)})...")
+    
+    top1_hits = 0
+    top5_hits = 0
+    aps = []
 
-    rng = random.Random(seed)
-
-    print(f"Running {N_TRIALS} retrieval trials...")
-    for _ in trange(N_TRIALS, desc="Retrieval trials", unit="trial"):
-        # Pick a random reference page
-        ref_idx = rng.randrange(len(pool))
+    # Use every single page as a search query exactly once
+    for ref_idx in tqdm(range(len(pool)), desc="Ranking Queries", unit="query"):
         ref_writer, ref_path, ref_emb = pool[ref_idx]
-
-        # Compare with every other page in the pool (exclude the same file)
-        for tgt_writer, tgt_path, tgt_emb in pool:
-            if tgt_path == ref_path:
-                continue
-
-            dist = distance(ref_emb, tgt_emb, metric)
-            score = score_from_distance(dist, metric)
-
-            pred = 1 if dist < threshold else 0
+        
+        # Determine how many true matches exist in the database (excluding the query itself)
+        total_relevant = sum(1 for w, p, _ in pool if w == ref_writer and p != ref_path)
+        
+        # If this writer only has 1 page in the whole dataset, we can't do retrieval for them
+        if total_relevant == 0:
+            continue 
             
-            label = 1 if tgt_writer == ref_writer else 0
+        # Compare query against all OTHER pages in the database
+        distances = []
+        for tgt_idx, (tgt_writer, tgt_path, tgt_emb) in enumerate(pool):
+            if ref_idx == tgt_idx:
+                continue # Skip comparing the query to its exact self
+                
+            dist = distance(ref_emb, tgt_emb, metric)
+            is_match = 1 if tgt_writer == ref_writer else 0
+            distances.append((dist, is_match))
+            
+        # Sort database by distance (lowest distance first)
+        distances.sort(key=lambda x: x[0])
+        
+        # Extract just the binary labels (1 for match, 0 for distractors) of the sorted list
+        ranked_labels = [match for _, match in distances]
+        
+        # Top-1 Accuracy: Is the #1 closest result a true match?
+        if ranked_labels[0] == 1:
+            top1_hits += 1
+            
+        # Top-5 Accuracy: Is there at least one true match in the top 5 closest results?
+        if sum(ranked_labels[:5]) > 0:
+            top5_hits += 1
+            
+        # Calculate Average Precision for this specific query
+        ap = calculate_average_precision(ranked_labels, total_relevant)
+        aps.append(ap)
 
-            y_true_all.append(label)
-            y_pred_all.append(pred)
-            y_score_all.append(score)
+    # -------- Final Aggregated Metrics --------
+    valid_queries = len(aps)
+    top1_acc = top1_hits / valid_queries
+    top5_acc = top5_hits / valid_queries
+    mAP = np.mean(aps)
 
-    y_true = np.asarray(y_true_all, dtype=int)
-    y_pred = np.asarray(y_pred_all, dtype=int)
-    y_score = np.asarray(y_score_all, dtype=float)
-
-    # -------- Metrics --------
-    acc = accuracy_score(y_true, y_pred)
-    tn, fp, fn, tp = confusion_matrix(y_true, y_pred).ravel()
-    prec, rec, f1, _ = precision_recall_fscore_support(y_true, y_pred, average="binary", zero_division=0)
-    fpr = fp / (fp + tn) if (fp + tn) > 0 else 0.0
-    fnr = fn / (fn + tp) if (fn + tp) > 0 else 0.0
-    try:
-        auc = roc_auc_score(y_true, y_score)
-    except Exception:
-        auc = float("nan")
-
-    print("\n--- Retrieval Evaluation (page-level) ---")
-    print(f"Trials: {N_TRIALS} | Pool size: {len(pool)} | Threshold: {threshold:.6f} | Metric: {metric}")
-    print(f"Accuracy: {acc:.4f} | Precision: {prec:.4f} | Recall: {rec:.4f} | F1: {f1:.4f} | AUC: {auc:.4f}")
-    print(f"TP: {tp}, TN: {tn}, FP: {fp}, FN: {fn}")
-    print(f"FPR: {fpr:.4f} | FNR: {fnr:.4f}")
+    print("\n" + "="*50)
+    print(" RETRIEVAL EVALUATION (Ranking Based) ")
+    print("="*50)
+    print(f"Total Valid Queries : {valid_queries}")
+    print(f"Distance Metric     : {metric}")
+    print("-" * 50)
+    print(f"Top-1 Accuracy      : {top1_acc * 100:.2f}%")
+    print(f"Top-5 Accuracy      : {top5_acc * 100:.2f}%")
+    print(f"mAP                 : {mAP * 100:.2f}%")
+    print("="*50)
 
 
 if __name__ == "__main__":

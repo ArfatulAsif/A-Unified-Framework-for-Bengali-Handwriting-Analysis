@@ -1,10 +1,11 @@
 # /page/evaluate.py
 from __future__ import annotations
-import yaml, random
+import yaml, random, time
 from pathlib import Path
 from typing import Dict, List, Tuple
 import numpy as np
 import torch
+import torch.nn as nn
 import matplotlib.pyplot as plt
 from tqdm import tqdm, trange
 from sklearn.metrics import (
@@ -22,11 +23,9 @@ plt.rcParams.update({
     "ytick.labelsize": 12,
 })
 
-
-
 # How many pairs to sample
-N_POS = 60
-N_NEG = 60
+N_POS = 200
+N_NEG = 200
 
 def set_seeds(seed: int):
     import random as pyrand
@@ -46,7 +45,6 @@ def index_writer_pages(root: Path) -> Dict[str, List[Path]]:
             imgs.extend(sorted(wdir.glob(ext)))
         if imgs:
             writers[wdir.name] = imgs
-
             print(wdir.name)
 
     return writers
@@ -82,14 +80,43 @@ def polyline_intersection_x(x, y1, y2):
             return float(min(max(x_star, x0), x1))
     return float(xv[k])
 
+
+# ==========================================
+# MODEL INFERENCE TIMER WRAPPER
+# ==========================================
+class InferenceTimerWrapper(nn.Module):
+    """
+    Wraps the patch encoder to accurately measure pure GPU/CPU inference time,
+    completely isolating it from OpenCV preprocessing/segmentation steps.
+    """
+    def __init__(self, model):
+        super().__init__()
+        self.model = model
+        self.total_inference_time = 0.0
+
+    def forward(self, *args, **kwargs):
+        # Synchronize before starting the timer to ensure accurate GPU measurement
+        if torch.cuda.is_available():
+            torch.cuda.synchronize()
+        start = time.perf_counter()
+        
+        result = self.model(*args, **kwargs)
+        
+        # Synchronize after the forward pass before stopping the timer
+        if torch.cuda.is_available():
+            torch.cuda.synchronize()
+        self.total_inference_time += time.perf_counter() - start
+        
+        return result
+
+
 def main():
     cfg = yaml.safe_load(open("config.yml", "r"))
     seed = cfg.get("runtime", {}).get("seed", 123)
     set_seeds(seed)
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-    print(device)
+    print(f"Using device: {device}")
 
     page_root = Path(cfg["paths"]["page_test_dir"])
     metric = cfg["evaluation_page"]["metric"]
@@ -98,7 +125,10 @@ def main():
     if not wmap:
         raise SystemExit(f"No page data under {page_root}")
 
-    patch_encoder = load_patch_encoder(cfg, device)
+    # Load and wrap the model to track pure inference time
+    raw_patch_encoder = load_patch_encoder(cfg, device)
+    patch_encoder = InferenceTimerWrapper(raw_patch_encoder)
+    patch_encoder.eval()
 
     # ---- sample page pairs ----
     writers = list(wmap.keys())
@@ -127,13 +157,22 @@ def main():
 
     print(f"Sampled {len(pairs)} page pairs (positives={len(pos_pairs)}, negatives={len(neg_pairs)})")
 
-    # ---- embed & score with progress + caching ----
+    # ---- embed & score with progress, caching, and timing ----
     cache: Dict[Path, np.ndarray] = {}
+    page_total_times: List[float] = []
 
     def get_embed(p: Path) -> np.ndarray | None:
         if p in cache:
             return cache[p]
+        
+        # Time the total end-to-end processing of a single page
+        start_time = time.perf_counter()
         emb = embed_page(p, cfg, patch_encoder, device)
+        end_time = time.perf_counter()
+        
+        # Record processing time
+        page_total_times.append(end_time - start_time)
+        
         cache[p] = emb
         return emb
 
@@ -183,6 +222,21 @@ def main():
     prec, rec, f1, _ = precision_recall_fscore_support(labels, preds_bal, average="binary", zero_division=0)
     fpr = fp / (fp + tn) if (fp + tn) > 0 else 0.0
     fnr = fn / (fn + tp) if (fn + tp) > 0 else 0.0
+
+    print("\n" + "="*50)
+    print("--- TIMING BENCHMARKS ---")
+    
+    # Calculate Averages
+    avg_total_time = np.mean(page_total_times) if page_total_times else 0.0
+    num_unique_pages = len(cache)
+    avg_model_inference = patch_encoder.total_inference_time / max(1, num_unique_pages)
+    avg_preprocessing = avg_total_time - avg_model_inference
+
+    print(f"Total Unique Pages Processed : {num_unique_pages}")
+    print(f"Avg Total Time Per Page      : {avg_total_time:.4f} sec")
+    print(f"  ├─ Avg Preprocessing Time  : {avg_preprocessing:.4f} sec  (Segmentation, Resizing, etc.)")
+    print(f"  └─ Avg Model Inference Time: {avg_model_inference:.4f} sec  (Pure Neural Network Forward Pass)")
+    print("="*50)
 
     print("\n--- Page-level intersections ---")
     print(f"PR=RC threshold ≈ {th_pr:.6f} | PR=RC value ≈ {np.interp(th_pr, ths, np.nan_to_num(precs, nan=0.0)):.4f}")

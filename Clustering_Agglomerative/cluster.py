@@ -3,7 +3,7 @@
 from __future__ import annotations
 from typing import Dict, List, Tuple
 import numpy as np
-from sklearn.cluster import DBSCAN
+from sklearn.cluster import DBSCAN, AgglomerativeClustering
 
 def _pairwise_distance_matrix(embs: np.ndarray, metric: str = "cosine") -> np.ndarray:
     """
@@ -33,11 +33,6 @@ def cluster_pages_dbscan(
 ) -> Tuple[np.ndarray, Dict[int, List[int]], np.ndarray]:
     """
     Cluster page embeddings with DBSCAN on a precomputed distance matrix.
-
-    Returns:
-      labels: (N,) cluster labels; -1 indicates noise
-      clusters: {cluster_id: [indices...]}, cluster_id excludes -1
-      dist_matrix: (N,N) distances used for clustering
     """
     D = _pairwise_distance_matrix(embs, metric=metric)
     db = DBSCAN(eps=eps, min_samples=min_samples, metric="precomputed")
@@ -47,6 +42,32 @@ def cluster_pages_dbscan(
     for i, c in enumerate(labels):
         if c == -1:
             continue
+        clusters.setdefault(c, []).append(i)
+
+    return labels, clusters, D
+
+def cluster_pages_agglomerative(
+    embs: np.ndarray,
+    metric: str = "cosine",
+    distance_threshold: float = 0.20,
+    linkage: str = "average",
+) -> Tuple[np.ndarray, Dict[int, List[int]], np.ndarray]:
+    """
+    Cluster page embeddings with Agglomerative Clustering on a precomputed distance matrix.
+    """
+    D = _pairwise_distance_matrix(embs, metric=metric)
+    
+    # n_clusters=None forces it to use the distance_threshold instead
+    agg = AgglomerativeClustering(
+        n_clusters=None, 
+        distance_threshold=distance_threshold, 
+        metric="precomputed", 
+        linkage=linkage
+    )
+    labels = agg.fit_predict(D)
+
+    clusters: Dict[int, List[int]] = {}
+    for i, c in enumerate(labels):
         clusters.setdefault(c, []).append(i)
 
     return labels, clusters, D

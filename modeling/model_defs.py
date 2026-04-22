@@ -1,71 +1,111 @@
+
 """
 model_defs.py
 -------------
-High-Speed "Fast-Track" Encoder.
-Optimized for minimum training time per epoch:
-  - Immediate downsampling to reduce spatial FLOPs.
-  - Efficient 3-block architecture.
-  - Optimized for NVIDIA Tensor Cores.
+Ensemble "Dual-Path" Fast-Track Encoder.
+Combines two lightweight experts:
+  1. Standard Branch: Captures micro-textures.
+  2. Dilated Branch: Captures long-range stroke connectivity.
+Fuses them into a single high-performance biometric embedding.
 """
 
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-def get_patch_encoder(input_shape=(128,128,1), embedding_dim=128) -> nn.Module:
-    class FastPatchEncoder(nn.Module):
-        def __init__(self, input_shape, embedding_dim):
+# ==========================================
+# 1. THE PATCH ENCODER (The Ensemble)
+# ==========================================
+
+def get_patch_encoder(input_shape=(128, 128, 1), embedding_dim=128) -> nn.Module:
+    class DualPathEncoder(nn.Module):
+        def __init__(self, embedding_dim):
             super().__init__()
             
-            # --- Block 1: Immediate Downsampling (128 -> 64) ---
-            # Using a stride of 2 here instead of MaxPool later saves one full operation
-            self.conv1 = nn.Conv2d(1, 32, kernel_size=3, stride=2, padding=1, bias=False)
-            self.bn1 = nn.BatchNorm2d(32)
-            
-            # --- Block 2: Feature Extraction (64 -> 32) ---
-            self.conv2 = nn.Conv2d(32, 64, kernel_size=3, stride=2, padding=1, bias=False)
-            self.bn2 = nn.BatchNorm2d(64)
-            
-            # --- Block 3: Style Bottleneck (32 -> 16) ---
-            self.conv3 = nn.Conv2d(64, 128, kernel_size=3, stride=2, padding=1, bias=False)
-            self.bn3 = nn.BatchNorm2d(128)
-            
-            self.act = nn.ReLU(inplace=True) # ReLU is slightly faster than LeakyReLU
-            
-            # Spatial Reduction to 1x1 vector
+            # --- SHARED STEM: Initial Downsampling (128 -> 64) ---
+            self.stem = nn.Sequential(
+                nn.Conv2d(1, 32, kernel_size=3, stride=2, padding=1, bias=False),
+                nn.BatchNorm2d(32),
+                nn.ReLU(inplace=True)
+            )
+
+            # --- BRANCH 1: Standard Convolution (Local Textures) ---
+            self.branch1 = nn.Sequential(
+                nn.Conv2d(32, 64, kernel_size=3, stride=2, padding=1, bias=False),
+                nn.BatchNorm2d(64),
+                nn.ReLU(inplace=True),
+                nn.Conv2d(64, 64, kernel_size=3, stride=2, padding=1, bias=False),
+                nn.BatchNorm2d(64),
+                nn.ReLU(inplace=True)
+            )
+
+            # --- BRANCH 2: Dilated Convolution (Long-range Strokes) ---
+            # Dilation of 2 allows the 3x3 kernel to see a 5x5 area 
+            # without increasing the parameter count.
+            self.branch2 = nn.Sequential(
+                nn.Conv2d(32, 64, kernel_size=3, stride=2, padding=2, dilation=2, bias=False),
+                nn.BatchNorm2d(64),
+                nn.ReLU(inplace=True),
+                nn.Conv2d(64, 64, kernel_size=3, stride=2, padding=2, dilation=2, bias=False),
+                nn.BatchNorm2d(64),
+                nn.ReLU(inplace=True)
+            )
+
+            # --- FUSION LAYER ---
+            # We concatenate the 64-dim outputs into a 128-dim feature map
             self.gap = nn.AdaptiveAvgPool2d((1, 1))
             self.fc = nn.Linear(128, embedding_dim)
 
         def forward(self, x):
-            x = self.act(self.bn1(self.conv1(x)))
-            x = self.act(self.bn2(self.conv2(x)))
-            x = self.act(self.bn3(self.conv3(x)))
+            x = self.stem(x)
             
-            x = self.gap(x)
+            # Run branches in parallel
+            f1 = self.branch1(x)
+            f2 = self.branch2(x)
+            
+            # Combine features
+            combined = torch.cat([f1, f2], dim=1)
+            
+            x = self.gap(combined)
             x = torch.flatten(x, 1)
             x = self.fc(x)
             
             return F.normalize(x, p=2, dim=1)
 
-    return FastPatchEncoder(input_shape, embedding_dim)
+    return DualPathEncoder(embedding_dim)
+
+
+# ==========================================
+# 2. THE LINE ENCODER
+# ==========================================
 
 def get_line_encoder(patch_encoder: nn.Module, patches_per_line: int=None) -> nn.Module:
     class FastLineEncoder(nn.Module):
-        def __init__(self, patch_encoder, patches_per_line):
+        def __init__(self, patch_encoder):
             super().__init__()
             self.patch_encoder = patch_encoder
 
         def forward(self, x):
+            # x shape: (Batch, K_patches, Channels, Height, Width)
             B, K, C, H, W = x.shape
-            x = x.reshape(B*K, C, H, W)
+            
+            # Flatten B and K to process all patches in one forward pass
+            x = x.reshape(B * K, C, H, W)
             E = self.patch_encoder(x)
             
-            # Mean pooling across K patches
+            # Reshape back to (Batch, K, Embedding_Dim)
             E = E.reshape(B, K, -1)
+            
+            # Mean pooling across the K patches to represent the entire line
             pooled = E.mean(dim=1)
             return F.normalize(pooled, p=2, dim=1)
             
-    return FastLineEncoder(patch_encoder, patches_per_line)
+    return FastLineEncoder(patch_encoder)
+
+
+# ==========================================
+# 3. THE SIAMESE WRAPPER & LOSS
+# ==========================================
 
 def build_triplet_siamese(line_encoder: nn.Module, embedding_dim=128, margin=0.3):
     class TripletSiamese(nn.Module):
@@ -75,22 +115,29 @@ def build_triplet_siamese(line_encoder: nn.Module, embedding_dim=128, margin=0.3
             self.embedding_dim = embedding_dim
 
         def forward(self, a_in, p_in, n_in):
-            # Parallel branch execution
-            return torch.cat([self.line_encoder(a_in), 
-                              self.line_encoder(p_in), 
-                              self.line_encoder(n_in)], dim=-1)
+            # Process Anchor, Positive, and Negative branches
+            return torch.cat([
+                self.line_encoder(a_in), 
+                self.line_encoder(p_in), 
+                self.line_encoder(n_in)
+            ], dim=-1)
 
     model = TripletSiamese(line_encoder, embedding_dim)
 
     def triplet_loss(_, y_pred):
+        # Slice the concatenated output back into A, P, N
         a = y_pred[:, :embedding_dim]
         p = y_pred[:, embedding_dim:2*embedding_dim]
         n = y_pred[:, 2*embedding_dim:]
         
-        # Fast vector distance calculation
+        # Calculate squared Euclidean distances
         pos_dist = torch.sum((a - p) ** 2, dim=1)
         neg_dist = torch.sum((a - n) ** 2, dim=1)
         
+        # Triplet Margin Loss
         return torch.clamp(pos_dist - neg_dist + margin, min=0.0).mean()
 
     return model, triplet_loss
+
+
+
