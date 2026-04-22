@@ -49,7 +49,7 @@ Sequential multi-writer segmentation is the task of detecting whether a single d
 
 **9. reports_retrieval**
 
-**10. clustering**
+**10. Clustering_Agglomerative**
 
 **11. reports_clustering**
 
