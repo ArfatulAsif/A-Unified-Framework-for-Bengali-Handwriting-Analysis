@@ -30,6 +30,7 @@ Sequential multi-writer segmentation is the task of detecting whether a single d
 
 # Folder Order
 
+
 **1. data**
 
 **2. preprocessing**
@@ -46,11 +47,17 @@ Sequential multi-writer segmentation is the task of detecting whether a single d
 
 **8. retrieval**
 
-**9. clustering**
+**9. reports_retrieval**
 
-**10. multi_writer**
+**10. clustering**
 
+**11. reports_clustering**
 
+**12. multi_writer**
+
+**13. reports_multi_writer_segmentation**
+
+**14. Ablation study**
 
 
 
