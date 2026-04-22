@@ -1,18 +1,5 @@
 # /page/show_lines_segmentation.py
 
-
-# Just visualize (no saving)
-# python -m page.show_lines_segmentation  ./data/Evaluate_For_Pages/218/218_2.jpg
-
-# python -m page.show_lines_segmentation  ./data/Evaluate_For_Pages/216/216_1.jpg
-
-
-# python -m page.show_lines_segmentation  ./data/Multi_Writer/Test_pages/0001_0002_0003_0006.jpg
-
-# Save crops to a folder and visualize
-# python -m page.show_lines_segmentation /path/to/page.jpg --save-dir /tmp/lines
-
-
 from __future__ import annotations
 
 import argparse
@@ -34,7 +21,6 @@ def _to_rgb(img_bgr: np.ndarray) -> np.ndarray:
 def visualize_segmentation(
     page_img_path: str | Path,
     save_dir: str | Path | None = None,
-    margin: int = 4,
     min_words_per_line: int = 1,
     max_cols: int = 3,
 ):
@@ -45,8 +31,7 @@ def visualize_segmentation(
         page_img_path: path to page image
         save_dir: if provided, segment_lines() will save crops there (and return paths).
                   If None, crops are kept in-memory and just displayed.
-        margin: padding around each crop (passed to segment_lines)
-        min_words_per_line: drop tiny lines if desired (passed to segment_lines)
+        min_words_per_line: drop tiny lines if desired
         max_cols: max columns for the cropped-line gallery
     """
     page_img_path = Path(page_img_path)
@@ -62,7 +47,6 @@ def visualize_segmentation(
     crops: List[Union[np.ndarray, str]] = segment_lines(
         page_img_path=page_img_path,
         output_dir=save_dir,
-        margin=margin,
         min_words_per_line=min_words_per_line,
     )
 
@@ -102,6 +86,8 @@ def visualize_segmentation(
     rows = int(np.ceil(n / cols))
 
     fig, axes = plt.subplots(rows, cols, figsize=(cols * 5, rows * 3))
+
+    # Normalize axes shape
     if rows == 1 and cols == 1:
         axes = np.array([[axes]])
     elif rows == 1:
@@ -136,24 +122,23 @@ def main():
         "--save-dir",
         type=str,
         default=None,
-        help="If provided, save crops here (segment_lines will return file paths).",
+        help="If provided, save crops here.",
     )
-    parser.add_argument("--margin", type=int, default=4, help="Crop margin (pixels)")
     parser.add_argument(
         "--min-words-per-line",
         type=int,
         default=1,
-        help="Minimum words in a line to keep (filter tiny lines).",
+        help="Minimum words in a line to keep.",
     )
     parser.add_argument(
         "--max-cols", type=int, default=3, help="Max columns for the crop gallery."
     )
+
     args = parser.parse_args()
 
     visualize_segmentation(
         page_img_path=args.page_image,
         save_dir=args.save_dir,
-        margin=args.margin,
         min_words_per_line=args.min_words_per_line,
         max_cols=args.max_cols,
     )
