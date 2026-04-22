@@ -1,0 +1,63 @@
+
+================== FastNet_T0 ==================
+
+
+============================== TUNE ====================
+
+
+Found 239 pages across 31 writers.
+
+=== Tuning Summary (top 10 by ACC) ===
+Embedding pages: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████| 239/239 [02:37<00:00,  1.52page/s] 
+Sweeping distance_threshold in [0.010, 0.500) step 0.010
+
+=== Tuning Summary (top 10 by ACC) ===
+threshold=0.110 | clusters=44 | ARI=0.9288 NMI=0.9694 | ACC=0.9951 F1=0.9313 PRE=0.9905 REC=0.8788
+threshold=0.100 | clusters=45 | ARI=0.9282 NMI=0.9685 | ACC=0.9951 F1=0.9307 PRE=0.9905 REC=0.8778
+threshold=0.110 | clusters=44 | ARI=0.9288 NMI=0.9694 | ACC=0.9951 F1=0.9313 PRE=0.9905 REC=0.8788
+threshold=0.100 | clusters=45 | ARI=0.9282 NMI=0.9685 | ACC=0.9951 F1=0.9307 PRE=0.9905 REC=0.8778
+threshold=0.090 | clusters=48 | ARI=0.9186 NMI=0.9654 | ACC=0.9946 F1=0.9214 PRE=1.0000 REC=0.8543
+threshold=0.140 | clusters=39 | ARI=0.9230 NMI=0.9716 | ACC=0.9946 F1=0.9258 PRE=0.9434 REC=0.9088
+threshold=0.090 | clusters=48 | ARI=0.9186 NMI=0.9654 | ACC=0.9946 F1=0.9214 PRE=1.0000 REC=0.8543
+threshold=0.140 | clusters=39 | ARI=0.9230 NMI=0.9716 | ACC=0.9946 F1=0.9258 PRE=0.9434 REC=0.9088
+threshold=0.140 | clusters=39 | ARI=0.9230 NMI=0.9716 | ACC=0.9946 F1=0.9258 PRE=0.9434 REC=0.9088
+threshold=0.130 | clusters=40 | ARI=0.9198 NMI=0.9696 | ACC=0.9943 F1=0.9227 PRE=0.9431 REC=0.9032
+threshold=0.120 | clusters=41 | ARI=0.9111 NMI=0.9666 | ACC=0.9938 F1=0.9144 PRE=0.9422 REC=0.8882
+threshold=0.150 | clusters=36 | ARI=0.9088 NMI=0.9691 | ACC=0.9934 F1=0.9122 PRE=0.9017 REC=0.9229
+threshold=0.170 | clusters=34 | ARI=0.8861 NMI=0.9640 | ACC=0.9915 F1=0.8905 PRE=0.8554 REC=0.9286
+threshold=0.160 | clusters=35 | ARI=0.8829 NMI=0.9622 | ACC=0.9912 F1=0.8875 PRE=0.8547 REC=0.9229
+threshold=0.180 | clusters=33 | ARI=0.8696 NMI=0.9582 | ACC=0.9900 F1=0.8747 PRE=0.8268 REC=0.9286
+
+=== Best Setting (by ACC) ===
+distance_threshold=0.110000 | clusters=44
+ARI=0.9288 | NMI=0.9694
+ACC=0.9951 | PRE=0.9905 | REC=0.8788 | F1=0.9313
+
+
+
+
+
+==================== Evaluate clustering ====================
+
+
+Found 138 pages across 12 writers.
+Embedding pages: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████| 138/138 [01:19<00:00,  1.73page/s] 
+Embeddings ready: 138
+
+==================================================
+ AGGLOMERATIVE CLUSTERING EVALUATION 
+==================================================
+Metric: cosine | distance_threshold: 0.1500
+Clusters Formed: 22 | Total Pages: 138
+--------------------------------------------------
+ GLOBAL METRICS (Academic Standard)
+Adjusted Rand Index (ARI) : 0.9198
+Normalized Mutual Info    : 0.9445
+--------------------------------------------------
+ PAIRWISE METRICS (Real-World Application)
+Accuracy : 0.9864 | F1-Score: 0.9272
+Precision: 1.0000 | Recall  : 0.8644
+AUC      : 0.9930
+TP: 822   TN: 8502  FP: 0     FN: 129  
+==================================================
+

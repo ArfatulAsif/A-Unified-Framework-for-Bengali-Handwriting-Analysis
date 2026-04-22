@@ -1,0 +1,57 @@
+======= DPE-Net (Dual-Path Patch Encoder) =======
+
+
+==================== TUNE ===========================
+
+
+Found 239 pages across 31 writers.
+Embedding pages: 100%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 239/239 [02:20<00:00,  1.71page/s]
+Sweeping distance_threshold in [0.010, 0.500) step 0.010
+
+=== Tuning Summary (top 10 by ACC) ===
+threshold=0.150 | clusters=30 | ARI=0.8240 NMI=0.9360 | ACC=0.9862 F1=0.8311 PRE=0.7656 REC=0.9088
+threshold=0.130 | clusters=31 | ARI=0.8222 NMI=0.9346 | ACC=0.9861 F1=0.8294 PRE=0.7674 REC=0.9023
+threshold=0.140 | clusters=31 | ARI=0.8222 NMI=0.9346 | ACC=0.9861 F1=0.8294 PRE=0.7674 REC=0.9023
+threshold=0.120 | clusters=33 | ARI=0.8192 NMI=0.9327 | ACC=0.9860 F1=0.8264 PRE=0.7692 REC=0.8929
+threshold=0.110 | clusters=39 | ARI=0.8117 NMI=0.9294 | ACC=0.9858 F1=0.8191 PRE=0.7804 REC=0.8618
+threshold=0.090 | clusters=45 | ARI=0.7941 NMI=0.9280 | ACC=0.9851 F1=0.8019 PRE=0.7993 REC=0.8045
+threshold=0.070 | clusters=54 | ARI=0.7603 NMI=0.9323 | ACC=0.9851 F1=0.7678 PRE=0.9199 REC=0.6588
+threshold=0.100 | clusters=42 | ARI=0.7929 NMI=0.9239 | ACC=0.9846 F1=0.8009 PRE=0.7772 REC=0.8261
+threshold=0.060 | clusters=57 | ARI=0.7421 NMI=0.9263 | ACC=0.9842 F1=0.7500 PRE=0.9171 REC=0.6344
+threshold=0.050 | clusters=66 | ARI=0.7040 NMI=0.9198 | ACC=0.9833 F1=0.7119 PRE=1.0000 REC=0.5526
+
+=== Best Setting (by ACC) ===
+distance_threshold=0.150000 | clusters=30
+ARI=0.8240 | NMI=0.9360
+ACC=0.9862 | PRE=0.7656 | REC=0.9088 | F1=0.8311
+
+
+
+
+
+
+================== Evaluate ==================
+==============================================
+
+
+
+Found 138 pages across 12 writers.
+Embedding pages: 100%|█████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 138/138 [01:09<00:00,  2.00page/s]
+Embeddings ready: 138
+
+==================================================
+ AGGLOMERATIVE CLUSTERING EVALUATION
+==================================================
+Metric: cosine | distance_threshold: 0.1500
+Clusters Formed: 19 | Total Pages: 138
+--------------------------------------------------
+ GLOBAL METRICS (Academic Standard)
+Adjusted Rand Index (ARI) : 0.7865
+Normalized Mutual Info    : 0.9000
+--------------------------------------------------
+ PAIRWISE METRICS (Real-World Application)
+Accuracy : 0.9603 | F1-Score: 0.8086
+Precision: 0.7857 | Recall  : 0.8328
+AUC      : 0.9764
+TP: 792   TN: 8286  FP: 216   FN: 159
+==================================================

@@ -1,0 +1,308 @@
+=========================================
+MODEL Architecture
+========================================
+
+
+
+
+
+
+"""
+model_defs.py
+-------------
+SOTA Benchmark Encoder Module.
+Currently configured for FasterNet-T0 (Low-Latency CNN) with pretrained weights.
+"""
+
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+
+try:
+    import timm
+except ImportError:
+    raise ImportError("Please install timm using 'pip install timm' to use SOTA models.")
+
+
+def get_patch_encoder(input_shape=(128, 128, 1), embedding_dim=128) -> nn.Module:
+    """
+    Builds the base patch encoder using modern SOTA architectures via timm.
+    Outputs L2-normalized embeddings required for Triplet Loss.
+    """
+    class TimmPatchEncoder(nn.Module):
+        def __init__(self):
+            super().__init__()
+            
+            # --- SWAP YOUR MODELS HERE ---
+            model_name = 'fasternet_t0' 
+            
+            # FasterNet is a CNN, so it dynamically adapts to your 128x128 patches
+            # without needing the img_size argument or interpolation hacks.
+            self.backbone = timm.create_model(
+                model_name, 
+                pretrained=True,             # Using ImageNet weights for robust feature extraction
+                in_chans=1,                  # Automatically adapts to grayscale 
+                num_classes=embedding_dim    # Replaces ImageNet head with your embedding size
+            )
+
+        def forward(self, x):
+            # Pass input through the backbone
+            x = self.backbone(x)
+            
+            # Crucial for Triplet Loss: L2 Normalize the final embedding
+            return F.normalize(x, p=2, dim=1)
+
+    return TimmPatchEncoder()
+
+
+def get_line_encoder(patch_encoder: nn.Module, patches_per_line: int=None) -> nn.Module:
+    """
+    Wraps the patch encoder to process an entire line (K patches) at once.
+    """
+    class FastLineEncoder(nn.Module):
+        def __init__(self, patch_encoder, patches_per_line):
+            super().__init__()
+            self.patch_encoder = patch_encoder
+
+        def forward(self, x):
+            B, K, C, H, W = x.shape
+            
+            # Flatten batch and patch dimensions to process all patches simultaneously
+            x = x.reshape(B * K, C, H, W)
+            E = self.patch_encoder(x)
+            
+            # Reshape back to separate the K patches per line
+            E = E.reshape(B, K, -1)
+            
+            # Mean pooling across K patches
+            pooled = E.mean(dim=1)
+            
+            # Final L2 normalization of the pooled line embedding
+            return F.normalize(pooled, p=2, dim=1)
+            
+    return FastLineEncoder(patch_encoder, patches_per_line)
+
+
+def build_triplet_siamese(line_encoder: nn.Module, embedding_dim=128, margin=0.3):
+    """
+    Builds the Siamese network and the Triplet Margin Loss function.
+    """
+    class TripletSiamese(nn.Module):
+        def __init__(self, line_encoder, embedding_dim):
+            super().__init__()
+            self.line_encoder = line_encoder
+            self.embedding_dim = embedding_dim
+
+        def forward(self, a_in, p_in, n_in):
+            # Parallel branch execution
+            return torch.cat([self.line_encoder(a_in), 
+                              self.line_encoder(p_in), 
+                              self.line_encoder(n_in)], dim=-1)
+
+    model = TripletSiamese(line_encoder, embedding_dim)
+
+    def triplet_loss(_, y_pred):
+        # Slice the concatenated output back into Anchor, Positive, Negative
+        a = y_pred[:, :embedding_dim]
+        p = y_pred[:, embedding_dim:2*embedding_dim]
+        n = y_pred[:, 2*embedding_dim:]
+        
+        # Fast vector distance calculation
+        pos_dist = torch.sum((a - p) ** 2, dim=1)
+        neg_dist = torch.sum((a - n) ** 2, dim=1)
+        
+        # Max(0, pos - neg + margin)
+        return torch.clamp(pos_dist - neg_dist + margin, min=0.0).mean()
+
+    return model, triplet_loss
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+====================================================
+training
+=====================================================
+
+
+
+
+
+| Epoch | Train Loss | Validation Loss | Time    |
+| ----: | ---------: | --------------: | ------- |
+|    40 |   0.002191 |        0.026118 | 43.47 m |
+|    41 |   0.002332 |        0.023369 | 43.47 m |
+|    42 |   0.002072 |        0.024794 | 43.38 m |
+|    43 |   0.002359 |        0.025054 | 43.41 m |
+|    44 |   0.002251 |        0.024603 | 43.35 m |
+|    45 |   0.002231 |        0.022941 | 43.31 m |
+|    46 |   0.002074 |        0.025440 | 43.27 m |
+
+---
+
+
+
+
+
+
+**Average Epoch Time:** 45.35 minutes
+**Best Epoch:** 36 *(val_loss: 0.022715)*
+**Early Stopping:** Triggered at epoch 46
+
+---
+
+
+
+
+
+
+
+
+
+
+
+
+===========================================================================================================
+Evaluation
+===========================================================================================================
+
+
+[INFO] Scanning dataset root: C:\Users\redwa\OneDrive\Desktop\(Full) ML New ablation study - Copy\data\Test
+  [OK] Writer 215: 85 images
+  [OK] Writer 216: 90 images
+  [OK] Writer 217: 48 images
+  [OK] Writer 218: 47 images
+  [OK] Writer 219: 114 images
+  [OK] Writer 220: 72 images
+  [OK] Writer 221: 216 images
+  [OK] Writer 222: 62 images
+  [OK] Writer 223: 61 images
+  [OK] Writer 224: 226 images
+  [OK] Writer 225: 120 images
+  [OK] Writer 226: 152 images
+  [OK] Writer 227: 212 images
+  [OK] Writer 228: 131 images
+  [OK] Writer 229: 376 images
+  [OK] Writer 230: 219 images
+  [OK] Writer Writer_0000: 66 images
+  [OK] Writer Writer_0001: 127 images
+  [OK] Writer Writer_0002: 120 images
+  [OK] Writer Writer_0003: 36 images
+  [OK] Writer Writer_0004: 81 images
+  [OK] Writer Writer_0005: 88 images
+  [OK] Writer Writer_0006: 128 images
+  [OK] Writer Writer_0007: 136 images
+  [OK] Writer Writer_0008: 106 images
+  [OK] Writer Writer_0009: 104 images
+  [OK] Writer Writer_0010: 112 images
+  [OK] Writer Writer_0011: 111 images
+  [OK] Writer Writer_0012: 50 images
+  [OK] Writer Writer_0013: 49 images
+  [OK] Writer Writer_0014: 44 images
+  [OK] Writer Writer_0015: 96 images
+[DONE] Found 32 writers under data\Test
+
+Benchmarking pure Neural Network Inference Latency...
+Scoring Test Pairs: 100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 1000/1000 [00:31<00:00, 32.07it/s]
+
+==============================================================================================================
+Total Params | FLOPs      | Inference/Ln | Acc.     | AUC      | Prec.    | Recall   | F1       | Threshold
+--------------------------------------------------------------------------------------------------------------
+3.2791 M     | 109.58 M   |     5.78 ms |  93.80% | 0.9861 | 0.9380 | 0.9380 | 0.9380 | 0.368000
+==============================================================================================================
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+===========================================================================================================
+Evaluation : Page
+===========================================================================================================
+
+
+
+Using device: cuda
+215
+216
+217
+218
+219
+220
+221
+222
+223
+224
+225
+226
+227
+228
+229
+230
+Writer_0000
+Writer_0001
+Writer_0002
+Writer_0004
+Writer_0005
+Writer_0006
+Writer_0007
+Writer_0008
+Writer_0009
+Writer_0010
+Writer_0011
+Writer_0012
+Writer_0013
+Writer_0014
+Writer_0015
+Sampled 400 page pairs (positives=200, negatives=200)
+Embedding & scoring pages: 100%|████████████████████████████████████████████████████████████████████████████████████████████████| 400/400 [02:19<00:00,  2.86pair/s]
+Threshold sweep: 100%|█████████████████████████████████████████████████████████████████████████████████████████████████████████| 4000/4000 [00:06<00:00, 614.93th/s] 
+
+==================================================
+--- TIMING BENCHMARKS ---
+Total Unique Pages Processed : 234
+Avg Total Time Per Page      : 0.5969 sec
+  ├─ Avg Preprocessing Time  : 0.5054 sec  (Segmentation, Resizing, etc.)
+  └─ Avg Model Inference Time: 0.0915 sec  (Pure Neural Network Forward Pass)
+==================================================
+
+--- Page-level intersections ---
+PR=RC threshold ≈ 0.252500 | PR=RC value ≈ 0.9600
+EER threshold   ≈ 0.252500 | error rate ≈ 0.0400
+
+--- Page-level metrics @ PR=RC ---
+Threshold: 0.252500
+Accuracy: 0.9600 | Precision: 0.9600 | Recall: 0.9600 | F1: 0.9600 | AUC: 0.9949
+TP: 192, TN: 192, FP: 8, FN: 8
+FPR: 0.0400 | FNR: 0.0400
+
+
+
+
+
+
+
+
+

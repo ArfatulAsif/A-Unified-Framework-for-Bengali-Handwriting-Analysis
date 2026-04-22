@@ -15,7 +15,7 @@ paths:
   model_dir: "./trained_model"          # General directory to save model-related files.
   checkpoints_dir: "./trained_model"    # Specific directory for model checkpoints saved during training.
   chk_points_weights: "./trained_model/patch_encoder_check_points.pt"     # Save best check points while training epoch.
-  base_encoder_weights: "./trained_model/patch_encoder_best_v06.pt" # Path where the best performing feature extractor (base network) is saved.
+  base_encoder_weights: "./trained_model/Complete_New_CNN_DPE_NET.pt" # Path where the best performing feature extractor (base network) is saved.
   page_test_dir: "./data/Evaluate_For_Pages"    # These are page handwriting of writers for evaluating page comparison  
   Test_page_data: "./data/Test_For_Pages"       # These are page handwriting of writers for testing page comparison
   multi_tune_pages: "./data/Multi_Writer/Tune_pages/"  # These pages are will be used for tuning mult_writer pages
@@ -73,7 +73,7 @@ training:
 evaluation:
   metric: "cosine"                      # What it is: The distance metric for comparing embeddings. Cosine is excellent for high-dimensional vectors.
                                         # Effect: This is an architectural choice. While cosine is standard, other metrics like Euclidean ('L2') could be used.
-  default_threshold: 0.300667           # Here the best threshold that was found during evaluation of line comparison
+  default_threshold: 0.3148             # Here the best threshold that was found during evaluation of line comparison
                                         # You have to save it manually
   thresholds:
     start: 0.00                         # The beginning of the range to test for the optimal threshold.
@@ -85,10 +85,19 @@ evaluation:
 
 
 
+
+segment_lines:
+  max_dim: 1024
+  margin: 4
+  adaptive_tolerance: 0.5
+
+
+
+
 evaluation_page:
   metric: "cosine"                      # What it is: The distance metric for comparing embeddings. Cosine is excellent for high-dimensional vectors.
                                         # Effect: This is an architectural choice. While cosine is standard, other metrics like Euclidean ('L2') could be used.
-  default_threshold:  0.204000          # Here the best threshold that was found during evaluation of page comparison
+  default_threshold:   0.1905           # Here the best threshold that was found during evaluation of page comparison
                                         # You have to save it manually
   thresholds:
     start: 0.00                         # The beginning of the range to test for the optimal threshold.
@@ -112,15 +121,20 @@ clustering_tuning:
 
 
 clustering:
-  eps:  0.040000             # best eps from tuning the clustering algorithm
+  eps:  0.110000            # best eps from tuning the clustering algorithm
                               # it represents how close two pages must be to be considered neighbors, in terms of cosine distance
   
   min_samples : 2             # minimum number pages to for a a writer cluster
 
 
 
+
+
+
+
+
 multi_writer:
-  eps:  0.09           # best eps from tuning the multi_writer segmentatin clustering
+  eps:    0.09        # best eps from tuning the multi_writer segmentatin clustering
 
   min_samples: 3
   window_size: 5
