@@ -1,0 +1,55 @@
+
+================================= Tune Clustering ==================
+
+Found 60 pages across 10 writers.
+Embedding pages: 100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 60/60 [00:34<00:00,  1.76page/s]
+Sweeping distance_threshold in [0.010, 0.500) step 0.010
+
+=== Tuning Summary (top 10 by ACC) ===
+threshold=0.110 | clusters=11 | ARI=0.9532 NMI=0.9720 | ACC=0.9921 F1=0.9576 PRE=0.9693 REC=0.9461
+threshold=0.060 | clusters=14 | ARI=0.9190 NMI=0.9588 | ACC=0.9870 F1=0.9260 PRE=1.0000 REC=0.8623
+threshold=0.090 | clusters=12 | ARI=0.9176 NMI=0.9573 | ACC=0.9864 F1=0.9250 PRE=0.9673 REC=0.8862
+threshold=0.100 | clusters=12 | ARI=0.9176 NMI=0.9573 | ACC=0.9864 F1=0.9250 PRE=0.9673 REC=0.8862
+threshold=0.050 | clusters=15 | ARI=0.9114 NMI=0.9523 | ACC=0.9859 F1=0.9191 PRE=1.0000 REC=0.8503
+threshold=0.070 | clusters=13 | ARI=0.9027 NMI=0.9487 | ACC=0.9842 F1=0.9114 PRE=0.9664 REC=0.8623
+threshold=0.080 | clusters=13 | ARI=0.9027 NMI=0.9487 | ACC=0.9842 F1=0.9114 PRE=0.9664 REC=0.8623
+threshold=0.040 | clusters=16 | ARI=0.8882 NMI=0.9428 | ACC=0.9825 F1=0.8977 PRE=1.0000 REC=0.8144
+threshold=0.030 | clusters=19 | ARI=0.8091 NMI=0.9128 | ACC=0.9718 F1=0.8239 PRE=1.0000 REC=0.7006
+threshold=0.120 | clusters=10 | ARI=0.8167 NMI=0.9346 | ACC=0.9650 F1=0.8360 PRE=0.7488 REC=0.9461
+
+=== Best Setting (by ACC) ===
+distance_threshold=0.110000 | clusters=11
+ARI=0.9532 | NMI=0.9720
+ACC=0.9921 | PRE=0.9693 | REC=0.9461 | F1=0.9576
+
+
+
+
+
+
+=============================== Evaluate clustering ======================
+
+
+
+Found 138 pages across 12 writers.
+Embedding pages: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 138/138 [01:10<00:00,  1.96page/s]
+Embeddings ready: 138
+
+==================================================
+ AGGLOMERATIVE CLUSTERING EVALUATION
+==================================================
+Metric: cosine | distance_threshold: 0.1100
+Clusters Formed: 23 | Total Pages: 138
+--------------------------------------------------
+ GLOBAL METRICS (Academic Standard)
+Adjusted Rand Index (ARI) : 0.7630
+Normalized Mutual Info    : 0.8658
+--------------------------------------------------
+ PAIRWISE METRICS (Real-World Application)
+Accuracy : 0.9560 | F1-Score: 0.7875
+Precision: 0.7656 | Recall  : 0.8107
+AUC      : 0.9251
+TP: 771   TN: 8266  FP: 236   FN: 180
+==================================================
+
+

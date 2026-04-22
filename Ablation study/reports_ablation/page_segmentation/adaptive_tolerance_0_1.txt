@@ -1,0 +1,58 @@
+============== In CONFIG ==============
+
+
+
+segment_lines:
+  max_dim: 1024
+  margin: 4
+  adaptive_tolerance: 0.1
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Using device: cuda
+215
+216
+217
+218
+219
+Writer_0000
+Writer_0001
+Writer_0002
+Writer_0004
+Writer_0005
+Sampled 300 page pairs (positives=150, negatives=150)
+Embedding & scoring pages: 100%|███████████████████████████████████████████████████████████████████████████████████| 300/300 [00:38<00:00,  7.74pair/s]
+Threshold sweep: 100%|████████████████████████████████████████████████████████████████████████████████████████████| 4000/4000 [00:06<00:00, 657.02th/s] 
+
+==================================================
+--- TIMING BENCHMARKS ---
+Total Unique Pages Processed : 60
+Avg Total Time Per Page      : 0.6457 sec
+  ├─ Avg Preprocessing Time  : 0.5974 sec  (Segmentation, Resizing, etc.)
+  └─ Avg Model Inference Time: 0.0484 sec  (Pure Neural Network Forward Pass)
+==================================================
+
+--- Page-level intersections ---
+PR=RC threshold ≈ 0.155000 | PR=RC value ≈ 0.9467
+EER threshold   ≈ 0.155000 | error rate ≈ 0.0533
+
+--- Page-level metrics @ PR=RC ---
+Threshold: 0.155000
+Accuracy: 0.9467 | Precision: 0.9467 | Recall: 0.9467 | F1: 0.9467 | AUC: 0.9934
+TP: 142, TN: 142, FP: 8, FN: 8
+FPR: 0.0533 | FNR: 0.0533

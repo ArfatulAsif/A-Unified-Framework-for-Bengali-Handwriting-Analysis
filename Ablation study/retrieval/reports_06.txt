@@ -1,0 +1,23 @@
+=========================== 370 Train writer ============================
+
+========================== 12 writers =======================
+
+
+
+
+
+
+
+
+Found 138 total pages across 12 writers.
+Embedding pages (this uses page.segment_lines internally)...
+Embedding pages:   0%|                                                                                                                             Embedding pages:   1%|█                                                                                                                            Embedding pages:   1%|██                                                                                                                           Embedding pages:   2%|███▏                                                                                                                                        Embedding pages:   6%|████████▎                                                                                                     Embedding pages:   7%|█████████▍                                     Embedding pages: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 138/138 [12:33<00:00,  5.46s/page]
+Page pool size (embedded): 138
+Running 20 retrieval trials...
+Retrieval trials: 100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 20/20 [00:00<00:00, 3204.20trial/s]
+
+--- Retrieval Evaluation (page-level) ---
+Trials: 20 | Pool size: 138 | Threshold: 0.204000 | Metric: cosine
+Accuracy: 0.9230 | Precision: 0.6027 | Recall: 0.8841 | F1: 0.7168 | AUC: 0.9647
+TP: 267, TN: 2262, FP: 176, FN: 35
+FPR: 0.0722 | FNR: 0.1159

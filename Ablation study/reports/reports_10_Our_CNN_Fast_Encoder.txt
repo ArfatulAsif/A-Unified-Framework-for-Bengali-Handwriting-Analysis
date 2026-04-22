@@ -1,0 +1,184 @@
+ [OK] Writer 1: 44 images
+  [OK] Writer 10: 110 images
+  [OK] Writer 11: 58 images
+  [OK] Writer 12: 161 images
+  [OK] Writer 13: 38 images
+  [OK] Writer 14: 93 images
+  [OK] Writer 15: 147 images
+  [OK] Writer 16: 83 images
+  [OK] Writer 17: 97 images
+  [OK] Writer 18: 22 images
+  [OK] Writer 19: 99 images
+  [OK] Writer 2: 26 images
+  [OK] Writer 20: 73 images
+  [OK] Writer 21: 168 images
+  [OK] Writer 22: 90 images
+  [OK] Writer 23: 154 images
+  [OK] Writer 24: 110 images
+  [OK] Writer 25: 174 images
+  [OK] Writer 26: 161 images
+  [OK] Writer 27: 98 images
+  [OK] Writer 28: 72 images
+  [OK] Writer 29: 63 images
+  [OK] Writer 3: 24 images
+  [OK] Writer 30: 203 images
+  [OK] Writer 31: 133 images
+  [OK] Writer 32: 95 images
+  [OK] Writer 33: 99 images
+  [OK] Writer 34: 171 images
+  [OK] Writer 35: 101 images
+  [OK] Writer 36: 76 images
+  [OK] Writer 37: 132 images
+  [OK] Writer 38: 121 images
+  [OK] Writer 39: 35 images
+  [OK] Writer 4: 30 images
+  [OK] Writer 40: 73 images
+  [OK] Writer 5: 37 images
+  [OK] Writer 6: 71 images
+  [OK] Writer 7: 68 images
+  [OK] Writer 8: 158 images
+  [OK] Writer 9: 114 images
+  [OK] Writer Writer_0031: 158 images
+  [OK] Writer Writer_0032: 61 images
+  [OK] Writer Writer_0033: 128 images
+  [OK] Writer Writer_0034: 142 images
+  [OK] Writer Writer_0035: 153 images
+  [OK] Writer Writer_0036: 149 images
+  [OK] Writer Writer_0037: 133 images
+  [OK] Writer Writer_0038: 120 images
+  [OK] Writer Writer_0039: 164 images
+  [OK] Writer Writer_0040: 151 images
+  [OK] Writer Writer_0041: 120 images
+  [OK] Writer Writer_0042: 92 images
+  [OK] Writer Writer_0043: 76 images
+  [OK] Writer Writer_0044: 132 images
+  [OK] Writer Writer_0045: 103 images
+  [OK] Writer Writer_0046: 18 images
+  [OK] Writer Writer_0047: 27 images
+  [OK] Writer Writer_0048: 14 images
+  [OK] Writer Writer_0049: 21 images
+  [OK] Writer Writer_0050: 25 images
+  [OK] Writer Writer_0051: 24 images
+  [OK] Writer Writer_0052: 23 images
+  [OK] Writer Writer_0053: 22 images
+  [OK] Writer Writer_0054: 24 images
+  [OK] Writer Writer_0055: 18 images
+  [OK] Writer Writer_0056: 33 images
+  [OK] Writer Writer_0057: 23 images
+  [OK] Writer Writer_0058: 32 images
+  [OK] Writer Writer_0059: 23 images
+  [OK] Writer Writer_0060: 24 images
+  [OK] Writer Writer_0061: 27 images
+  [OK] Writer Writer_0062: 22 images
+  [OK] Writer Writer_0063: 34 images
+  [OK] Writer Writer_0064: 22 images
+  [OK] Writer Writer_0065: 25 images
+  [OK] Writer Writer_0066: 22 images
+  [OK] Writer Writer_0067: 15 images
+  [OK] Writer Writer_0068: 22 images
+  [OK] Writer Writer_0069: 26 images
+  [OK] Writer Writer_0070: 19 images
+[DONE] Found 80 writers under data\Train
+Train writers: 64 | Val writers: 16
+
+==================================================
+SOTA BENCHMARK: Architectural Complexity (Per Patch)
+Total Parameters: 0.1589 M
+FLOPs (MACs):      39.49 M
+==================================================
+
+Starting training...
+Epoch 1/20: 100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 75/75 [02:16<00:00,  1.82s/it, loss=0.0945] 
+Epoch 1: loss=0.134050 | val_loss=0.199414 | time=2.98m
+Epoch 2/20: 100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 75/75 [02:12<00:00,  1.76s/it, loss=0.0877]
+Epoch 2: loss=0.059764 | val_loss=0.150689 | time=2.87m
+Epoch 3/20: 100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 75/75 [02:10<00:00,  1.75s/it, loss=0.0075]
+Epoch 3: loss=0.035959 | val_loss=0.138113 | time=2.86m
+Epoch 4/20: 100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 75/75 [02:12<00:00,  1.77s/it, loss=0.0369]
+Epoch 4: loss=0.036277 | val_loss=0.154782 | time=2.87m
+Epoch 5/20: 100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 75/75 [02:12<00:00,  1.77s/it, loss=0.0278]
+Epoch 5: loss=0.036326 | val_loss=0.141372 | time=2.86m
+Epoch 6/20: 100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 75/75 [02:14<00:00,  1.79s/it, loss=0.0014]
+Epoch 6: loss=0.032351 | val_loss=0.109815 | time=2.93m
+Epoch 7/20: 100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 75/75 [02:11<00:00,  1.76s/it, loss=0.0434]
+Epoch 7: loss=0.026282 | val_loss=0.140705 | time=2.87m
+Epoch 8/20: 100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 75/75 [02:11<00:00,  1.76s/it, loss=0.0410]
+Epoch 8: loss=0.026996 | val_loss=0.205509 | time=2.84m
+Epoch 9/20: 100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 75/75 [02:11<00:00,  1.76s/it, loss=0.0003]
+Epoch 9: loss=0.022067 | val_loss=0.142194 | time=2.86m
+Epoch 10/20: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 75/75 [02:11<00:00,  1.75s/it, loss=0.0000]
+Epoch 10: loss=0.023301 | val_loss=0.155814 | time=2.85m
+Epoch 11/20: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 75/75 [02:11<00:00,  1.76s/it, loss=0.0069]
+Epoch 11: loss=0.024948 | val_loss=0.107952 | time=2.86m
+Epoch 12/20: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 75/75 [02:10<00:00,  1.74s/it, loss=0.0659]
+Epoch 12: loss=0.016006 | val_loss=0.136335 | time=2.85m
+Epoch 13/20: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 75/75 [02:12<00:00,  1.76s/it, loss=0.0015]
+Epoch 13: loss=0.021041 | val_loss=0.102542 | time=2.88m
+Epoch 14/20: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 75/75 [02:12<00:00,  1.76s/it, loss=0.0774]
+Epoch 14: loss=0.030055 | val_loss=0.116627 | time=2.87m
+Epoch 15/20: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 75/75 [02:10<00:00,  1.74s/it, loss=0.0000] 
+Epoch 15: loss=0.021559 | val_loss=0.111358 | time=2.84m
+Epoch 16/20: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 75/75 [02:10<00:00,  1.74s/it, loss=0.0000] 
+Epoch 16: loss=0.017926 | val_loss=0.119211 | time=2.83m
+Epoch 17/20: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 75/75 [02:10<00:00,  1.74s/it, loss=0.0114] 
+Epoch 17: loss=0.023550 | val_loss=0.098406 | time=2.82m
+Epoch 18/20: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 75/75 [02:11<00:00,  1.75s/it, loss=0.0016] 
+Epoch 18: loss=0.016547 | val_loss=0.088879 | time=2.85m
+Epoch 19/20: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 75/75 [02:12<00:00,  1.76s/it, loss=0.0000] 
+Epoch 19: loss=0.019460 | val_loss=0.121142 | time=2.84m
+Epoch 20/20: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 75/75 [02:11<00:00,  1.76s/it, loss=0.0001] 
+Epoch 20: loss=0.017822 | val_loss=0.101941 | time=2.86m
+
+==================================================
+AVG EPOCH TIME: 2.86 minutes
+BEST EPOCH:     18 (val_loss: 0.088879)
+==================================================
+
+
+
+
+
+
+
+
+
+
+
+===========================================================================================================
+Evaluation
+===========================================================================================================
+
+[INFO] Scanning dataset root: C:\Users\redwa\OneDrive\Desktop\ML New ablation study\data\Test
+  [OK] Writer 215: 85 images
+  [OK] Writer 216: 90 images
+  [OK] Writer 217: 48 images
+  [OK] Writer 218: 47 images
+  [OK] Writer 219: 114 images
+  [OK] Writer 220: 72 images
+  [OK] Writer 221: 216 images
+  [OK] Writer 222: 62 images
+  [OK] Writer 223: 61 images
+  [OK] Writer 224: 226 images
+  [OK] Writer Writer_0000: 66 images
+  [OK] Writer Writer_0001: 127 images
+  [OK] Writer Writer_0002: 120 images
+  [OK] Writer Writer_0003: 36 images
+  [OK] Writer Writer_0004: 81 images
+  [OK] Writer Writer_0005: 88 images
+  [OK] Writer Writer_0006: 128 images
+  [OK] Writer Writer_0007: 136 images
+  [OK] Writer Writer_0008: 106 images
+  [OK] Writer Writer_0009: 104 images
+[DONE] Found 20 writers under data\Test
+
+Benchmarking pure Neural Network Inference Latency...
+Scoring Test Pairs: 100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 1000/1000 [00:25<00:00, 39.01it/s] 
+
+
+
+
+==============================================================================================================
+Total Params | FLOPs      | Inference/Ln | Acc.     | AUC      | Prec.    | Recall   | F1       | Threshold
+--------------------------------------------------------------------------------------------------------------
+0.1589 M     | 39.49 M    |     0.53 ms |  82.60% | 0.9208 | 0.8260 | 0.8260 | 0.8260 | 0.240000
+==============================================================================================================

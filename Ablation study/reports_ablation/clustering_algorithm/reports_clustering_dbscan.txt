@@ -1,0 +1,72 @@
+================================== Tune Clustering ============================
+
+
+
+Found 60 pages across 10 writers.
+Embedding pages: 100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 60/60 [00:34<00:00,  1.76page/s]
+Embeddings ready: 60
+Sweeping eps in [0.010, 0.500) step 0.010, min_samples in [2, 3]
+
+=== Tuning Summary (top 10 by ACC) ===
+eps=0.060 ms=2 | clusters=9 noise=1 | ARI=0.9069 NMI=0.9516 | ACC=0.9836 F1=0.9159 PRE=0.8876 REC=0.9461
+eps=0.060 ms=3 | clusters=8 noise=3 | ARI=0.9137 NMI=0.9585 | ACC=0.9831 F1=0.9128 PRE=0.8870 REC=0.9401
+eps=0.050 ms=2 | clusters=9 noise=2 | ARI=0.8829 NMI=0.9360 | ACC=0.9802 F1=0.8968 PRE=0.8837 REC=0.9102
+eps=0.030 ms=2 | clusters=11 noise=4 | ARI=0.8533 NMI=0.9115 | ACC=0.9797 F1=0.8831 PRE=0.9645 REC=0.8144
+eps=0.050 ms=3 | clusters=8 noise=4 | ARI=0.8841 NMI=0.9393 | ACC=0.9797 F1=0.8935 PRE=0.8830 REC=0.9042
+eps=0.040 ms=2 | clusters=10 noise=3 | ARI=0.8626 NMI=0.9260 | ACC=0.9785 F1=0.8834 PRE=0.9057 REC=0.8623
+eps=0.030 ms=3 | clusters=8 noise=10 | ARI=0.7781 NMI=0.8856 | ACC=0.9780 F1=0.8721 PRE=0.9638 REC=0.7964
+eps=0.040 ms=3 | clusters=8 noise=7 | ARI=0.8427 NMI=0.9243 | ACC=0.9774 F1=0.8765 PRE=0.9045 REC=0.8503
+eps=0.020 ms=2 | clusters=9 noise=12 | ARI=0.7152 NMI=0.8652 | ACC=0.9746 F1=0.8443 PRE=1.0000 REC=0.7305
+eps=0.020 ms=3 | clusters=8 noise=14 | ARI=0.6726 NMI=0.8549 | ACC=0.9740 F1=0.8403 PRE=1.0000 REC=0.7246
+
+=== Best Setting (by ACC) ===
+eps=0.060000, min_samples=2 | clusters=9, noise=1
+ARI=0.9069 | NMI=0.9516
+ACC=0.9836 | PRE=0.8876 | REC=0.9461 | F1=0.9159 | FPR=0.0125 | FNR=0.0539 | AUC=0.9955
+
+Suggested config.yml update:
+clustering:
+  eps: 0.060000
+  min_samples: 2
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+=================================== Evaluate clustering ==========================
+
+
+(pt-gpu) PS C:\Users\redwa\OneDrive\Desktop\ML New ablation study> python -m clustering.evaluate_clustering
+Found 138 pages across 12 writers.
+Embedding pages: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 138/138 [01:08<00:00,  2.01page/s]
+Embeddings ready: 138
+
+DBSCAN -> clusters: 9, noise pages: 17
+
+==================================================
+ CLUSTERING EVALUATION
+==================================================
+Metric: cosine | eps: 0.0600 | min_samples: 2
+Clusters Formed: 9 | Noise Pages: 17 | Total Pages: 138
+--------------------------------------------------
+ GLOBAL METRICS (Academic Standard)
+Adjusted Rand Index (ARI) : 0.5847
+Normalized Mutual Info    : 0.7791
+--------------------------------------------------
+ PAIRWISE METRICS (Real-World Application)
+Accuracy : 0.9086 | F1-Score: 0.6415
+Precision: 0.5298 | Recall  : 0.8128
+AUC      : 0.9251
+TP: 773   TN: 7816  FP: 686   FN: 178
+==================================================

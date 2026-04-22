@@ -1,0 +1,466 @@
+=========================================
+MODEL Architecture
+========================================
+
+
+
+"""
+
+
+model_defs.py
+-------------
+Defines the core PyTorch modules for the writer verification task:
+  - Patch encoder CNN (produces L2-normalized patch embeddings).      : L2 - Normalized = making lenght of each patch vector exactly same, so the vectors only differs in Direction(-->)
+  - Line encoder (TimeDistributed patch encoder + mean pooling)
+  - Triplet Siamese (anchor, positive, negative) with custom triplet loss
+"""
+
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+
+
+def get_patch_encoder(input_shape=(128,128,1), embedding_dim=128) -> nn.Module:
+    """
+    This function builds and returns the base CNN that acts as a feature extractor.
+    Its job is to take a single image patch and convert it into a dense feature vector (embedding).
+    """
+    class PatchEncoder(nn.Module):
+        """A small but effective CNN for patch-level embeddings."""
+        def __init__(self, input_shape, embedding_dim):
+            super().__init__()
+            H, W, C = input_shape
+            assert C == 1 # This model is designed for grayscale images (1 channel).
+
+            # --- Hierarchical Feature Extraction Layers ---
+            # These layers learn progressively more complex features, from simple edges to parts of characters.
+
+            # Block 1: Learns low-level features like edges and curves.
+            self.conv1 = nn.Conv2d(1, 32, kernel_size=3, padding=1)
+            self.pool1 = nn.MaxPool2d(2) # Halves the spatial dimensions (128x128 -> 64x64).
+
+            # Block 2: Combines edges and curves into more complex shapes.
+            self.conv2 = nn.Conv2d(32, 64, kernel_size=3, padding=1)
+            self.pool2 = nn.MaxPool2d(2) # Reduces dimensions (64x64 -> 32x32).
+
+            # Block 3: Combines shapes into higher-level patterns, like parts of characters.
+            self.conv3 = nn.Conv2d(64, 128, kernel_size=3, padding=1)
+            self.pool3 = nn.MaxPool2d(2) # Reduces dimensions (32x32 -> 16x16).
+
+            # --- Feature Interpretation and Embedding Layers ---
+            # These layers take the learned features and map them to the final embedding space.
+
+            self.flatten = nn.Flatten() # Converts the 2D feature map into a 1D vector.
+            self.dropout = nn.Dropout(0.4) # Regularization layer to prevent overfitting.
+            
+            # nn.LazyLinear automatically infers the input size from the first forward pass.
+            self.fc1 = nn.LazyLinear(256) 
+            # This final linear layer projects the features down to the desired embedding dimension.
+            self.fc2 = nn.Linear(256, embedding_dim)
+            
+            self.relu = nn.ReLU() # Standard activation function.
+
+        def forward(self, x):
+            """Defines the forward pass (the data's path through the layers)."""
+            # Input x has shape: (Batch, Channels, Height, Width) -> (B, 1, H, W) : Channels = 1, only grayscale, it would be 3 for RGB
+            
+            # Pass through the convolutional blocks.
+            x = self.relu(self.conv1(x))
+            x = self.pool1(x)
+            x = self.relu(self.conv2(x))
+            x = self.pool2(x)
+            x = self.relu(self.conv3(x))
+            x = self.pool3(x)
+            
+            # Flatten the feature map and pass through the dense layers.
+            x = self.flatten(x)
+            x = self.dropout(x)
+            x = self.relu(self.fc1(x))
+
+            # L2 normalize the vector before the final projection. This can help stabilize training.
+            x = F.normalize(x, p=2, dim=1)
+            
+            # Project to the final embedding dimension.
+            x = self.fc2(x)
+
+            # Final L2 normalization. This is crucial for similarity learning, as it ensures
+            # all embeddings have a length of 1, forcing the model to focus on direction (features).
+            x = F.normalize(x, p=2, dim=1)
+            return x
+
+    return PatchEncoder(input_shape, embedding_dim)
+
+
+def get_line_encoder(patch_encoder: nn.Module, patches_per_line: int=None) -> nn.Module:
+    """
+    This function builds the Line Encoder. It wraps the Patch Encoder and adds a pooling
+    step to create a single embedding for an entire line from its constituent patches.
+    """
+    class LineEncoder(nn.Module):
+        """Wraps the patch encoder and mean-pools across K patches."""     # Mean pooling = averaging the k pathes into creating one, which represents the lines embedding
+        def __init__(self, patch_encoder, patches_per_line):
+            super().__init__()
+            # The LineEncoder uses the previously defined PatchEncoder as its core component.
+            self.patch_encoder = patch_encoder
+            self.patches_per_line = patches_per_line
+
+        def forward(self, x):
+            # Input x is a stack of K patches for each item in the batch.
+            # Shape: (Batch, K_patches, Channels, Height, Width) -> (B, K, 1, H, W)
+            B, K, C, H, W = x.shape
+            
+            # To process all patches efficiently, we reshape the input so that the batch
+            # and patch dimensions are combined. Shape -> (B*K, C, H, W)
+            x = x.reshape(B*K, C, H, W)
+            
+            # Pass all B*K patches through the patch_encoder at once.
+            E = self.patch_encoder(x)          # Output shape: (B*K, embedding_dim)
+            
+            # Reshape the output back to separate the batch and patch dimensions.
+            D = E.shape[1] # This is the embedding_dim
+            E = E.reshape(B, K, D)             # Shape -> (B, K, D)
+            
+            # Mean Pooling: Average the K patch embeddings for each line to get a single line embedding.
+            pooled = E.mean(dim=1)             # Shape -> (B, D)
+            
+            # L2 normalize the final pooled line embedding.
+            out = F.normalize(pooled, p=2, dim=1)
+            return out
+
+    return LineEncoder(patch_encoder, patches_per_line)
+
+
+def build_triplet_siamese(line_encoder: nn.Module, embedding_dim=128, margin=0.2):     # by default embedding_dim = 128 and margin = 0.2, but you can change them during training
+    """
+    This function builds the complete Siamese network for training.
+    It uses the Line Encoder three times (for A, P, N) and defines the triplet loss function.
+    """
+    class TripletSiamese(nn.Module):
+        """Triplet network that computes and concatenates three line embeddings."""
+        def __init__(self, line_encoder, embedding_dim):
+            super().__init__()
+            # The line_encoder is a shared component. The same instance with the same weights
+            # will be used to process the anchor, positive, and negative lines.
+            self.line_encoder = line_encoder
+            self.embedding_dim = embedding_dim
+
+        def forward(self, a_in, p_in, n_in):
+            """Process the anchor, positive, and negative inputs."""
+            a_e = self.line_encoder(a_in) # Get anchor embedding
+            p_e = self.line_encoder(p_in) # Get positive embedding
+            n_e = self.line_encoder(n_in) # Get negative embedding
+            
+            # Concatenate the three embeddings into a single tensor.
+            # This is a convenient way to pass all three to the loss function.
+            merged = torch.cat([a_e, p_e, n_e], dim=-1)  # Shape -> (B, 3 * embedding_dim)
+            return merged
+
+    model = TripletSiamese(line_encoder, embedding_dim)
+
+    def triplet_loss(_, y_pred):
+        """
+        Custom triplet loss function. It takes the concatenated embeddings and calculates
+        the loss based on the relative distances between A, P, and N.
+        """
+        # Split the concatenated tensor back into individual embeddings.
+        a = y_pred[:, :embedding_dim]
+        p = y_pred[:, embedding_dim:2*embedding_dim]
+        n = y_pred[:, 2*embedding_dim:]
+        
+        # Calculate the squared L2 distance between Anchor and Positive.
+        pos_dist = ((a - p) ** 2).sum(dim=-1)
+        # Calculate the squared L2 distance between Anchor and Negative.
+        neg_dist = ((a - n) ** 2).sum(dim=-1)
+        
+        # The core of the triplet loss formula: loss = max(0, pos_dist - neg_dist + margin)
+        # It penalizes the model if the positive pair is not closer than the negative pair by at least the margin.
+        loss = torch.clamp(pos_dist - neg_dist + margin, min=0.0)
+        
+        # Return the average loss over the entire batch.
+        return loss.mean()
+
+    return model, triplet_loss
+
+
+
+
+
+
+
+
+
+
+
+
+====================================================
+training
+=====================================================
+
+
+
+
+C:\Users\redwa\OneDrive\Desktop\ML New ablation study\modeling\train.py:36: FutureWarning: `torch.cuda.amp.GradScaler(args...)` is deprecated. Please use `torch.amp.GradScaler('cuda', args...)` instead.
+  scaler = torch.cuda.amp.GradScaler()
+Mixed precision ENABLED (float16).
+[INFO] Scanning dataset root: C:\Users\redwa\OneDrive\Desktop\ML New ablation study\data\Train
+  [OK] Writer 1: 44 images
+  [OK] Writer 10: 110 images
+  [OK] Writer 11: 58 images
+  [OK] Writer 12: 161 images
+  [OK] Writer 13: 38 images
+  [OK] Writer 14: 93 images
+  [OK] Writer 15: 147 images
+  [OK] Writer 16: 83 images
+  [OK] Writer 17: 97 images
+  [OK] Writer 18: 22 images
+  [OK] Writer 19: 99 images
+  [OK] Writer 2: 26 images
+  [OK] Writer 20: 73 images
+  [OK] Writer 21: 168 images
+  [OK] Writer 22: 90 images
+  [OK] Writer 23: 154 images
+  [OK] Writer 24: 110 images
+  [OK] Writer 25: 174 images
+  [OK] Writer 26: 161 images
+  [OK] Writer 27: 98 images
+  [OK] Writer 28: 72 images
+  [OK] Writer 29: 63 images
+  [OK] Writer 3: 24 images
+  [OK] Writer 30: 203 images
+  [OK] Writer 31: 133 images
+  [OK] Writer 32: 95 images
+  [OK] Writer 33: 99 images
+  [OK] Writer 34: 171 images
+  [OK] Writer 35: 101 images
+  [OK] Writer 36: 76 images
+  [OK] Writer 37: 132 images
+  [OK] Writer 38: 121 images
+  [OK] Writer 39: 35 images
+  [OK] Writer 4: 30 images
+  [OK] Writer 40: 73 images
+  [OK] Writer 5: 37 images
+  [OK] Writer 6: 71 images
+  [OK] Writer 7: 68 images
+  [OK] Writer 8: 158 images
+  [OK] Writer 9: 114 images
+  [OK] Writer Writer_0031: 158 images
+  [OK] Writer Writer_0032: 61 images
+  [OK] Writer Writer_0033: 128 images
+  [OK] Writer Writer_0034: 142 images
+  [OK] Writer Writer_0035: 153 images
+  [OK] Writer Writer_0036: 149 images
+  [OK] Writer Writer_0037: 133 images
+  [OK] Writer Writer_0038: 120 images
+  [OK] Writer Writer_0039: 164 images
+  [OK] Writer Writer_0040: 151 images
+  [OK] Writer Writer_0041: 120 images
+  [OK] Writer Writer_0042: 92 images
+  [OK] Writer Writer_0043: 76 images
+  [OK] Writer Writer_0044: 132 images
+  [OK] Writer Writer_0045: 103 images
+  [OK] Writer Writer_0046: 18 images
+  [OK] Writer Writer_0047: 27 images
+  [OK] Writer Writer_0048: 14 images
+  [OK] Writer Writer_0049: 21 images
+  [OK] Writer Writer_0050: 25 images
+  [OK] Writer Writer_0051: 24 images
+  [OK] Writer Writer_0052: 23 images
+  [OK] Writer Writer_0053: 22 images
+  [OK] Writer Writer_0054: 24 images
+  [OK] Writer Writer_0055: 18 images
+  [OK] Writer Writer_0056: 33 images
+  [OK] Writer Writer_0057: 23 images
+  [OK] Writer Writer_0058: 32 images
+  [OK] Writer Writer_0059: 23 images
+  [OK] Writer Writer_0060: 24 images
+  [OK] Writer Writer_0061: 27 images
+  [OK] Writer Writer_0062: 22 images
+  [OK] Writer Writer_0063: 34 images
+  [OK] Writer Writer_0064: 22 images
+  [OK] Writer Writer_0065: 25 images
+  [OK] Writer Writer_0066: 22 images
+  [OK] Writer Writer_0067: 15 images
+  [OK] Writer Writer_0068: 22 images
+  [OK] Writer Writer_0069: 26 images
+  [OK] Writer Writer_0070: 19 images
+[DONE] Found 80 writers under data\Train
+Train writers: 64 | Val writers: 16
+
+==================================================
+SOTA BENCHMARK: Architectural Complexity (Per Patch)
+Total Parameters: 8.6131 M
+FLOPs (MACs):      164.23 M
+==================================================
+
+Starting training...
+Epoch 1/20: 100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 75/75 [12:11<00:00,  9.75s/it, loss=0.2209]
+Epoch 1: loss=0.281544 | val_loss=0.282039 | time=14.76m
+Epoch 2/20: 100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 75/75 [12:14<00:00,  9.80s/it, loss=0.2262]
+Epoch 2: loss=0.212045 | val_loss=0.236267 | time=14.74m
+Epoch 3/20: 100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 75/75 [12:12<00:00,  9.77s/it, loss=0.2438]
+Epoch 3: loss=0.170812 | val_loss=0.153206 | time=14.71m
+Epoch 4/20: 100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 75/75 [12:15<00:00,  9.80s/it, loss=0.1013]
+Epoch 4: loss=0.128602 | val_loss=0.162574 | time=14.77m
+Epoch 5/20: 100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 75/75 [12:12<00:00,  9.77s/it, loss=0.1100]
+Epoch 5: loss=0.118164 | val_loss=0.166628 | time=14.71m
+Epoch 6/20: 100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 75/75 [12:16<00:00,  9.82s/it, loss=0.0752]
+Epoch 6: loss=0.114142 | val_loss=0.153955 | time=14.79m
+Epoch 7/20: 100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 75/75 [12:12<00:00,  9.77s/it, loss=0.1729]
+Epoch 7: loss=0.101869 | val_loss=0.158681 | time=14.71m
+Epoch 8/20: 100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 75/75 [12:11<00:00,  9.75s/it, loss=0.0972]
+Epoch 8: loss=0.087968 | val_loss=0.125393 | time=14.69m
+Epoch 9/20: 100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 75/75 [12:16<00:00,  9.82s/it, loss=0.0477]
+Epoch 9: loss=0.084792 | val_loss=0.131617 | time=14.78m
+Epoch 10/20: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 75/75 [12:13<00:00,  9.78s/it, loss=0.1214]
+Epoch 10: loss=0.081659 | val_loss=0.109382 | time=14.73m
+Epoch 11/20: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 75/75 [12:13<00:00,  9.78s/it, loss=0.0707]
+Epoch 11: loss=0.073769 | val_loss=0.116973 | time=14.72m
+Epoch 12/20: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 75/75 [12:12<00:00,  9.77s/it, loss=0.0885] 
+Epoch 12: loss=0.074790 | val_loss=0.121482 | time=14.73m
+Epoch 13/20: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 75/75 [12:13<00:00,  9.78s/it, loss=0.0662] 
+Epoch 13: loss=0.066394 | val_loss=0.112495 | time=14.73m
+Epoch 14/20: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 75/75 [12:14<00:00,  9.79s/it, loss=0.0626] 
+Epoch 14: loss=0.060005 | val_loss=0.094900 | time=14.74m
+Epoch 15/20: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 75/75 [12:11<00:00,  9.75s/it, loss=0.0528] 
+Epoch 15: loss=0.061655 | val_loss=0.096020 | time=14.71m
+Epoch 16/20: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 75/75 [12:29<00:00,  9.99s/it, loss=0.0385] 
+Epoch 16: loss=0.053198 | val_loss=0.096893 | time=14.98m
+Epoch 17/20: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 75/75 [12:18<00:00,  9.84s/it, loss=0.0869] 
+Epoch 11: loss=0.073769 | val_loss=0.116973 | time=14.72m
+Epoch 12/20: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 75/75 [12:12<00:00,  9.77s/it, loss=0.0885] 
+Epoch 12: loss=0.074790 | val_loss=0.121482 | time=14.73m
+Epoch 13/20: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 75/75 [12:13<00:00,  9.78s/it, loss=0.0662] 
+Epoch 13: loss=0.066394 | val_loss=0.112495 | time=14.73m
+Epoch 14/20: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 75/75 [12:14<00:00,  9.79s/it, loss=0.0626] 
+Epoch 14: loss=0.060005 | val_loss=0.094900 | time=14.74m
+Epoch 15/20: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 75/75 [12:11<00:00,  9.75s/it, loss=0.0528] 
+Epoch 15: loss=0.061655 | val_loss=0.096020 | time=14.71m
+Epoch 16/20: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 75/75 [12:29<00:00,  9.99s/it, loss=0.0385] 
+Epoch 16: loss=0.053198 | val_loss=0.096893 | time=14.98m
+Epoch 17/20: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 75/75 [12:18<00:00,  9.84s/it, loss=0.0869] 
+Epoch 17: loss=0.046514 | val_loss=0.098581 | time=14.83m
+Epoch 18/20: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 75/75 [12:23<00:00,  9.91s/it, loss=0.0441] 
+Epoch 18: loss=0.048790 | val_loss=0.090053 | time=14.94m
+Epoch 19/20: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 75/75 [12:23<00:00,  9.91s/it, loss=0.0300] 
+Epoch 19: loss=0.043378 | val_loss=0.096351 | time=14.92m
+Epoch 20/20: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 75/75 [12:24<00:00,  9.92s/it, loss=0.0214] 
+Epoch 11: loss=0.073769 | val_loss=0.116973 | time=14.72m
+Epoch 12/20: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 75/75 [12:12<00:00,  9.77s/it, loss=0.0885] 
+Epoch 12: loss=0.074790 | val_loss=0.121482 | time=14.73m
+Epoch 13/20: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 75/75 [12:13<00:00,  9.78s/it, loss=0.0662] 
+Epoch 13: loss=0.066394 | val_loss=0.112495 | time=14.73m
+Epoch 14/20: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 75/75 [12:14<00:00,  9.79s/it, loss=0.0626] 
+Epoch 14: loss=0.060005 | val_loss=0.094900 | time=14.74m
+Epoch 15/20: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 75/75 [12:11<00:00,  9.75s/it, loss=0.0528] 
+Epoch 15: loss=0.061655 | val_loss=0.096020 | time=14.71m
+Epoch 16/20: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 75/75 [12:29<00:00,  9.99s/it, loss=0.0385] 
+Epoch 16: loss=0.053198 | val_loss=0.096893 | time=14.98m
+Epoch 17/20: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 75/75 [12:18<00:00,  9.84s/it, loss=0.0869] 
+Epoch 17: loss=0.046514 | val_loss=0.098581 | time=14.83m
+Epoch 18/20: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 75/75 [12:23<00:00,  9.91s/it, loss=0.0441] 
+Epoch 18: loss=0.048790 | val_loss=0.090053 | time=14.94m
+Epoch 19/20: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 75/75 [12:23<00:00,  9.91s/it, loss=0.0300] 
+Epoch 11: loss=0.073769 | val_loss=0.116973 | time=14.72m
+Epoch 12/20: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 75/75 [12:12<00:00,  9.77s/it, loss=0.0885] 
+Epoch 12: loss=0.074790 | val_loss=0.121482 | time=14.73m
+Epoch 13/20: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 75/75 [12:13<00:00,  9.78s/it, loss=0.0662] 
+Epoch 13: loss=0.066394 | val_loss=0.112495 | time=14.73m
+Epoch 14/20: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 75/75 [12:14<00:00,  9.79s/it, loss=0.0626] 
+Epoch 14: loss=0.060005 | val_loss=0.094900 | time=14.74m
+Epoch 15/20: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 75/75 [12:11<00:00,  9.75s/it, loss=0.0528] 
+Epoch 15: loss=0.061655 | val_loss=0.096020 | time=14.71m
+Epoch 16/20: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 75/75 [12:29<00:00,  9.99s/it, loss=0.0385] 
+Epoch 16: loss=0.053198 | val_loss=0.096893 | time=14.98m
+Epoch 17/20: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 75/75 [12:18<00:00,  9.84s/it, loss=0.0869] 
+Epoch 17: loss=0.046514 | val_loss=0.098581 | time=14.83m
+Epoch 18/20: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 75/75 [12:23<00:00,  9.91s/it, loss=0.0441] 
+Epoch 13/20: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 75/75 [12:13<00:00,  9.78s/it, loss=0.0662] 
+Epoch 13: loss=0.066394 | val_loss=0.112495 | time=14.73m
+Epoch 14/20: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 75/75 [12:14<00:00,  9.79s/it, loss=0.0626] 
+Epoch 14: loss=0.060005 | val_loss=0.094900 | time=14.74m
+Epoch 15/20: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 75/75 [12:11<00:00,  9.75s/it, loss=0.0528] 
+Epoch 15: loss=0.061655 | val_loss=0.096020 | time=14.71m
+Epoch 16/20: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 75/75 [12:29<00:00,  9.99s/it, loss=0.0385] 
+Epoch 16: loss=0.053198 | val_loss=0.096893 | time=14.98m
+Epoch 17/20: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 75/75 [12:18<00:00,  9.84s/it, loss=0.0869] 
+Epoch 14: loss=0.060005 | val_loss=0.094900 | time=14.74m
+Epoch 15/20: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 75/75 [12:11<00:00,  9.75s/it, loss=0.0528] 
+Epoch 15: loss=0.061655 | val_loss=0.096020 | time=14.71m
+Epoch 16/20: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 75/75 [12:29<00:00,  9.99s/it, loss=0.0385] 
+Epoch 16: loss=0.053198 | val_loss=0.096893 | time=14.98m
+Epoch 17/20: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 75/75 [12:18<00:00,  9.84s/it, loss=0.0869] 
+Epoch 15: loss=0.061655 | val_loss=0.096020 | time=14.71m
+Epoch 16/20: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 75/75 [12:29<00:00,  9.99s/it, loss=0.0385] 
+Epoch 16: loss=0.053198 | val_loss=0.096893 | time=14.98m
+Epoch 17/20: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 75/75 [12:18<00:00,  9.84s/it, loss=0.0869] 
+Epoch 16: loss=0.053198 | val_loss=0.096893 | time=14.98m
+Epoch 17/20: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 75/75 [12:18<00:00,  9.84s/it, loss=0.0869] 
+Epoch 17: loss=0.046514 | val_loss=0.098581 | time=14.83m
+Epoch 18/20: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 75/75 [12:23<00:00,  9.91s/it, loss=0.0441] 
+Epoch 18: loss=0.048790 | val_loss=0.090053 | time=14.94m
+Epoch 19/20: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 75/75 [12:23<00:00,  9.91s/it, loss=0.0300] 
+Epoch 19: loss=0.043378 | val_loss=0.096351 | time=14.92m
+Epoch 20/20: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 75/75 [12:24<00:00,  9.92s/it, loss=0.0214] 
+Epoch 20: loss=0.038336 | val_loss=0.091670 | time=14.95m
+
+==================================================
+AVG EPOCH TIME: 14.78 minutes
+BEST EPOCH:     18 (val_loss: 0.090053)
+==================================================
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+===========================================================================================================
+Evaluation
+===========================================================================================================
+
+
+
+
+
+[INFO] Scanning dataset root: C:\Users\redwa\OneDrive\Desktop\ML New ablation study\data\Test
+  [OK] Writer 215: 85 images
+  [OK] Writer 216: 90 images
+  [OK] Writer 217: 48 images
+  [OK] Writer 218: 47 images
+  [OK] Writer 219: 114 images
+  [OK] Writer 220: 72 images
+  [OK] Writer 221: 216 images
+  [OK] Writer 222: 62 images
+  [OK] Writer 223: 61 images
+  [OK] Writer 224: 226 images
+  [OK] Writer Writer_0000: 66 images
+  [OK] Writer Writer_0001: 127 images
+  [OK] Writer Writer_0002: 120 images
+  [OK] Writer Writer_0003: 36 images
+  [OK] Writer Writer_0004: 81 images
+  [OK] Writer Writer_0005: 88 images
+  [OK] Writer Writer_0006: 128 images
+  [OK] Writer Writer_0007: 136 images
+  [OK] Writer Writer_0008: 106 images
+  [OK] Writer Writer_0009: 104 images
+[DONE] Found 20 writers under data\Test
+
+Benchmarking pure Neural Network Inference Latency...
+Scoring Test Pairs: 100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 1000/1000 [00:31<00:00, 31.64it/s]
+
+==============================================================================================================
+Total Params | FLOPs      | Inference/Ln | Acc.     | AUC      | Prec.    | Recall   | F1       | Threshold
+--------------------------------------------------------------------------------------------------------------
+8.6131 M     | 164.23 M   |     1.94 ms |  83.10% | 0.9046 | 0.8303 | 0.8320 | 0.8312 | 0.301204
+==============================================================================================================

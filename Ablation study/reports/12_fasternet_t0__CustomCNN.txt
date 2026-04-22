@@ -1,0 +1,390 @@
+
+
+=========================================
+MODEL Architecture
+========================================
+
+"""
+model_defs.py
+-------------
+Hybrid SOTA + Custom CNN Encoder.
+Architecture: FasterNet-T0 (Pretrained) + Fast-Track CNN (Scratch)
+Fusion Strategy: Late Embedding Fusion
+"""
+
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+
+try:
+    import timm
+except ImportError:
+    raise ImportError("Please install timm using 'pip install timm' to use SOTA models.")
+
+
+# --- Sub-Module: The Custom CNN Stream ---
+class FastTrackStream(nn.Module):
+    """
+    Your highly optimized 3-block CNN.
+    Trained from scratch to capture specific handwriting stroke textures.
+    """
+    def __init__(self, embedding_dim=128):
+        super().__init__()
+        
+        self.conv1 = nn.Conv2d(1, 32, kernel_size=3, stride=2, padding=1, bias=False)
+        self.bn1 = nn.BatchNorm2d(32)
+        
+        self.conv2 = nn.Conv2d(32, 64, kernel_size=3, stride=2, padding=1, bias=False)
+        self.bn2 = nn.BatchNorm2d(64)
+        
+        self.conv3 = nn.Conv2d(64, 128, kernel_size=3, stride=2, padding=1, bias=False)
+        self.bn3 = nn.BatchNorm2d(128)
+        
+        self.act = nn.ReLU(inplace=True)
+        self.gap = nn.AdaptiveAvgPool2d((1, 1))
+        self.fc = nn.Linear(128, embedding_dim)
+
+    def forward(self, x):
+        x = self.act(self.bn1(self.conv1(x)))
+        x = self.act(self.bn2(self.conv2(x)))
+        x = self.act(self.bn3(self.conv3(x)))
+        
+        x = self.gap(x)
+        x = torch.flatten(x, 1)
+        x = self.fc(x)
+        
+        # NOTE: We DO NOT L2-normalize here. We return the raw logits 
+        # so the fusion layer can properly weigh the features.
+        return x
+
+
+def get_patch_encoder(input_shape=(128, 128, 1), embedding_dim=128) -> nn.Module:
+    """
+    Builds the Two-Stream Hybrid Patch Encoder.
+    """
+    class HybridPatchEncoder(nn.Module):
+        def __init__(self):
+            super().__init__()
+            
+            # --- Stream 1: The Pretrained Speed Expert (Global Shape Bias) ---
+            # FasterNet is a CNN, handles spatial dims dynamically, no img_size needed.
+            self.pretrained_stream = timm.create_model(
+                'fasternet_t0', 
+                pretrained=True, 
+                in_chans=1, 
+                num_classes=128
+            )
+            
+            # --- Stream 2: The Custom CNN (Local Texture Bias) ---
+            self.custom_stream = FastTrackStream(embedding_dim=128)
+            
+            # --- Fusion Layer ---
+            # Combines the 128-dim output of FasterNet and 128-dim output of Fast-Track
+            self.fusion_fc = nn.Linear(128 + 128, embedding_dim)
+
+        def forward(self, x):
+            # 1. Pass the image through both networks simultaneously
+            feat_pre = self.pretrained_stream(x)
+            feat_cus = self.custom_stream(x)
+            
+            # 2. Concatenate features along the channel dimension
+            combined = torch.cat([feat_pre, feat_cus], dim=1)
+            
+            # 3. Compress back to target dimension and apply Triplet L2 Norm
+            fused_embedding = self.fusion_fc(combined)
+            return F.normalize(fused_embedding, p=2, dim=1)
+
+    return HybridPatchEncoder()
+
+
+def get_line_encoder(patch_encoder: nn.Module, patches_per_line: int=None) -> nn.Module:
+    """
+    Wraps the patch encoder to process an entire line (K patches) at once.
+    """
+    class FastLineEncoder(nn.Module):
+        def __init__(self, patch_encoder, patches_per_line):
+            super().__init__()
+            self.patch_encoder = patch_encoder
+
+        def forward(self, x):
+            B, K, C, H, W = x.shape
+            
+            x = x.reshape(B * K, C, H, W)
+            E = self.patch_encoder(x)
+            
+            # Reshape back to separate the K patches per line and Mean Pool
+            E = E.reshape(B, K, -1)
+            pooled = E.mean(dim=1)
+            
+            return F.normalize(pooled, p=2, dim=1)
+            
+    return FastLineEncoder(patch_encoder, patches_per_line)
+
+
+def build_triplet_siamese(line_encoder: nn.Module, embedding_dim=128, margin=0.3):
+    """
+    Builds the Siamese network and the Triplet Margin Loss function.
+    """
+    class TripletSiamese(nn.Module):
+        def __init__(self, line_encoder, embedding_dim):
+            super().__init__()
+            self.line_encoder = line_encoder
+            self.embedding_dim = embedding_dim
+
+        def forward(self, a_in, p_in, n_in):
+            # Parallel branch execution
+            return torch.cat([self.line_encoder(a_in), 
+                              self.line_encoder(p_in), 
+                              self.line_encoder(n_in)], dim=-1)
+
+    model = TripletSiamese(line_encoder, embedding_dim)
+
+    def triplet_loss(_, y_pred):
+        a = y_pred[:, :embedding_dim]
+        p = y_pred[:, embedding_dim:2*embedding_dim]
+        n = y_pred[:, 2*embedding_dim:]
+        
+        # Fast vector distance calculation
+        pos_dist = torch.sum((a - p) ** 2, dim=1)
+        neg_dist = torch.sum((a - n) ** 2, dim=1)
+        
+        return torch.clamp(pos_dist - neg_dist + margin, min=0.0).mean()
+
+    return model, triplet_loss
+
+
+
+
+
+
+
+
+
+
+====================================================
+training 
+=====================================================
+
+
+
+...)` instead.
+  scaler = torch.cuda.amp.GradScaler()
+Mixed precision ENABLED (float16).
+[INFO] Scanning dataset root: C:\Users\Asus\Desktop\ML New ablation study\data\Train
+  [OK] Writer 1: 44 images
+  [OK] Writer 10: 110 images
+  [OK] Writer 11: 58 images
+  [OK] Writer 12: 161 images
+  [OK] Writer 13: 38 images
+  [OK] Writer 14: 93 images
+  [OK] Writer 15: 147 images
+  [OK] Writer 16: 83 images
+  [OK] Writer 17: 97 images
+  [OK] Writer 18: 22 images
+  [OK] Writer 19: 99 images
+  [OK] Writer 2: 26 images
+  [OK] Writer 20: 73 images
+  [OK] Writer 21: 168 images
+  [OK] Writer 22: 90 images
+  [OK] Writer 23: 154 images
+  [OK] Writer 24: 110 images
+  [OK] Writer 25: 174 images
+  [OK] Writer 26: 161 images
+  [OK] Writer 27: 98 images
+  [OK] Writer 28: 72 images
+  [OK] Writer 29: 63 images
+  [OK] Writer 3: 24 images
+  [OK] Writer 30: 203 images
+  [OK] Writer 31: 133 images
+  [OK] Writer 32: 95 images
+  [OK] Writer 33: 99 images
+  [OK] Writer 34: 171 images
+  [OK] Writer 35: 101 images
+  [OK] Writer 36: 76 images
+  [OK] Writer 37: 132 images
+  [OK] Writer 38: 121 images
+  [OK] Writer 39: 35 images
+  [OK] Writer 4: 30 images
+  [OK] Writer 40: 73 images
+  [OK] Writer 5: 37 images
+  [OK] Writer 6: 71 images
+  [OK] Writer 7: 68 images
+  [OK] Writer 8: 158 images
+  [OK] Writer 9: 114 images
+  [OK] Writer Writer_0031: 158 images
+  [OK] Writer Writer_0032: 61 images
+  [OK] Writer Writer_0033: 128 images
+  [OK] Writer Writer_0034: 142 images
+  [OK] Writer Writer_0035: 153 images
+  [OK] Writer Writer_0036: 149 images
+  [OK] Writer Writer_0037: 133 images
+  [OK] Writer Writer_0038: 120 images
+  [OK] Writer Writer_0039: 164 images
+  [OK] Writer Writer_0040: 151 images
+  [OK] Writer Writer_0041: 120 images
+  [OK] Writer Writer_0042: 92 images
+  [OK] Writer Writer_0043: 76 images
+  [OK] Writer Writer_0044: 132 images
+  [OK] Writer Writer_0045: 103 images
+  [OK] Writer Writer_0046: 18 images
+  [OK] Writer Writer_0047: 27 images
+  [OK] Writer Writer_0048: 14 images
+  [OK] Writer Writer_0049: 21 images
+  [OK] Writer Writer_0050: 25 images
+  [OK] Writer Writer_0051: 24 images
+  [OK] Writer Writer_0052: 23 images
+  [OK] Writer Writer_0053: 22 images
+  [OK] Writer Writer_0054: 24 images
+  [OK] Writer Writer_0055: 18 images
+  [OK] Writer Writer_0056: 33 images
+  [OK] Writer Writer_0057: 23 images
+  [OK] Writer Writer_0058: 32 images
+  [OK] Writer Writer_0059: 23 images
+  [OK] Writer Writer_0060: 24 images
+  [OK] Writer Writer_0061: 27 images
+  [OK] Writer Writer_0062: 22 images
+  [OK] Writer Writer_0063: 34 images
+  [OK] Writer Writer_0064: 22 images
+  [OK] Writer Writer_0065: 25 images
+  [OK] Writer Writer_0066: 22 images
+  [OK] Writer Writer_0067: 15 images
+  [OK] Writer Writer_0068: 22 images
+  [OK] Writer Writer_0069: 26 images
+  [OK] Writer Writer_0070: 19 images
+[DONE] Found 80 writers under data\Train
+Train writers: 64 | Val writers: 16
+
+==================================================
+SOTA BENCHMARK: Architectural Complexity (Per Patch)
+Total Parameters: 3.0282 M
+FLOPs (MACs):      148.66 M
+==================================================
+
+Starting training...
+Epoch 1/20: 100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 75/75 [08:09<00:00,  6.52s/it, loss=0.0287]
+Epoch 1: loss=0.083104 | val_loss=0.113114 | time=9.43m
+Epoch 2/20: 100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 75/75 [08:01<00:00,  6.43s/it, loss=0.0311]
+Epoch 2: loss=0.029159 | val_loss=0.094480 | time=9.30m
+Epoch 3/20: 100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 75/75 [08:00<00:00,  6.41s/it, loss=0.0583]
+Epoch 3: loss=0.032524 | val_loss=0.124534 | time=9.28m
+Epoch 4/20: 100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 75/75 [08:01<00:00,  6.42s/it, loss=0.0316]
+Epoch 4: loss=0.018589 | val_loss=0.094488 | time=9.29m
+Epoch 5/20: 100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 75/75 [08:01<00:00,  6.42s/it, loss=0.0401]
+Epoch 5: loss=0.020532 | val_loss=0.095273 | time=9.28m
+Epoch 6/20: 100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 75/75 [08:03<00:00,  6.45s/it, loss=0.0021]
+Epoch 6: loss=0.012814 | val_loss=0.082563 | time=9.34m
+Epoch 7/20: 100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 75/75 [08:02<00:00,  6.44s/it, loss=0.0013]
+Epoch 7: loss=0.011542 | val_loss=0.096898 | time=9.31m
+Epoch 8/20: 100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 75/75 [08:01<00:00,  6.42s/it, loss=0.0006]
+Epoch 8: loss=0.010482 | val_loss=0.108754 | time=9.28m
+Epoch 9/20: 100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 75/75 [08:01<00:00,  6.42s/it, loss=0.0000]
+Epoch 9: loss=0.009338 | val_loss=0.094528 | time=9.28m
+Epoch 10/20: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 75/75 [08:02<00:00,  6.43s/it, loss=0.0037]
+Epoch 10: loss=0.008918 | val_loss=0.069035 | time=9.31m
+Epoch 11/20: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 75/75 [08:01<00:00,  6.42s/it, loss=0.0437]
+Epoch 11: loss=0.012934 | val_loss=0.092494 | time=9.29m
+Epoch 12/20: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 75/75 [08:00<00:00,  6.41s/it, loss=0.0403]
+Epoch 12: loss=0.009976 | val_loss=0.073325 | time=9.30m
+Epoch 13/20: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 75/75 [08:03<00:00,  6.45s/it, loss=0.0006]
+Epoch 13: loss=0.006205 | val_loss=0.125636 | time=9.33m
+Epoch 14/20: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 75/75 [08:01<00:00,  6.42s/it, loss=0.0104]
+Epoch 14: loss=0.010421 | val_loss=0.090044 | time=9.29m
+Epoch 15/20: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 75/75 [08:04<00:00,  6.46s/it, loss=0.0073]
+Epoch 15: loss=0.008712 | val_loss=0.080781 | time=9.34m
+Epoch 16/20: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 75/75 [08:02<00:00,  6.43s/it, loss=0.0000]
+Epoch 16: loss=0.006283 | val_loss=0.078073 | time=9.30m
+Epoch 17/20: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 75/75 [08:03<00:00,  6.44s/it, loss=0.0066]
+Epoch 17: loss=0.005913 | val_loss=0.067313 | time=9.31m
+Epoch 18/20: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 75/75 [08:01<00:00,  6.42s/it, loss=0.0200]
+Epoch 18: loss=0.006234 | val_loss=0.085402 | time=9.29m
+Epoch 19/20: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 75/75 [08:02<00:00,  6.43s/it, loss=0.0000]
+Epoch 19: loss=0.004650 | val_loss=0.082887 | time=9.30m
+Epoch 20/20: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 75/75 [08:02<00:00,  6.43s/it, loss=0.0000]
+Epoch 20: loss=0.004943 | val_loss=0.082788 | time=9.32m
+
+==================================================
+AVG EPOCH TIME: 9.31 minutes
+BEST EPOCH:     17 (val_loss: 0.067313)
+==================================================
+
+
+(dl_env) C:\Users\Asus\Desktop\ML New ablation study>python -m modeling.evaluate
+[INFO] Scanning dataset root: C:\Users\Asus\Desktop\ML New ablation study\data\Test
+  [OK] Writer 215: 85 images
+  [OK] Writer 216: 90 images
+  [OK] Writer 217: 48 images
+  [OK] Writer 218: 47 images
+  [OK] Writer 219: 114 images
+  [OK] Writer 220: 72 images
+  [OK] Writer 221: 216 images
+  [OK] Writer 222: 62 images
+  [OK] Writer 223: 61 images
+  [OK] Writer 224: 226 images
+  [OK] Writer Writer_0000: 66 images
+  [OK] Writer Writer_0001: 127 images
+  [OK] Writer Writer_0002: 120 images
+  [OK] Writer Writer_0003: 36 images
+  [OK] Writer Writer_0004: 81 images
+  [OK] Writer Writer_0005: 88 images
+  [OK] Writer Writer_0006: 128 images
+  [OK] Writer Writer_0007: 136 images
+  [OK] Writer Writer_0008: 106 images
+  [OK] Writer Writer_0009: 104 images
+[DONE] Found 20 writers under data\Test
+
+Benchmarking pure Neural Network Inference Latency...
+Scoring Test Pairs: 100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 1000/1000 [00:27<00:00, 36.77it/s]
+
+==============================================================================================================
+Total Params | FLOPs      | Inference/Ln | Acc.     | AUC      | Prec.    | Recall   | F1       | Threshold 
+--------------------------------------------------------------------------------------------------------------
+3.0282 M     | 148.66 M   |     3.60 ms |  89.40% | 0.9626 | 0.8940 | 0.8940 | 0.8940 | 0.224000
+==============================================================================================================
+
+
+
+
+
+
+
+
+
+===========================================================================================================
+Evaluation
+===========================================================================================================
+
+
+
+
+[INFO] Scanning dataset root: C:\Users\Asus\Desktop\ML New ablation study\data\Test
+  [OK] Writer 215: 85 images
+  [OK] Writer 216: 90 images
+  [OK] Writer 217: 48 images
+  [OK] Writer 218: 47 images
+  [OK] Writer 219: 114 images
+  [OK] Writer 220: 72 images
+  [OK] Writer 221: 216 images
+  [OK] Writer 222: 62 images
+  [OK] Writer 223: 61 images
+  [OK] Writer 224: 226 images
+  [OK] Writer Writer_0000: 66 images
+  [OK] Writer Writer_0001: 127 images
+  [OK] Writer Writer_0002: 120 images
+  [OK] Writer Writer_0003: 36 images
+  [OK] Writer Writer_0004: 81 images
+  [OK] Writer Writer_0005: 88 images
+  [OK] Writer Writer_0006: 128 images
+  [OK] Writer Writer_0007: 136 images
+  [OK] Writer Writer_0008: 106 images
+  [OK] Writer Writer_0009: 104 images
+[DONE] Found 20 writers under data\Test
+
+Benchmarking pure Neural Network Inference Latency...
+Scoring Test Pairs: 100%|████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 1000/1000 [00:28<00:00, 34.85it/s]
+
+==============================================================================================================
+Total Params | FLOPs      | Inference/Ln | Acc.     | AUC      | Prec.    | Recall   | F1       | Threshold
+--------------------------------------------------------------------------------------------------------------
+3.0282 M     | 148.66 M   |     5.82 ms |  89.40% | 0.9626 | 0.8940 | 0.8940 | 0.8940 | 0.224000
+==============================================================================================================
+

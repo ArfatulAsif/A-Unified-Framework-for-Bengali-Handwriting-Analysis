@@ -1,0 +1,963 @@
+=================   CNN + Self-Attention + GeM Page Pooling  =======================
+
+
+In that case, the technical name for your strategy would be:
+
+### **CNN + Self-Attention + GeM Page Pooling**
+
+When describing this in your paper, you can structure it as a three-stage pipeline. This notation clearly shows how you transition from raw pixels to a single identity vector:
+
+* **Stage 1: Local Feature Extraction (CNN)**
+    A dual-path CNN encoder processes $K$ sampled patches to extract high-dimensional local feature maps.
+* **Stage 2: Relational Contextualization (+ Self-Attention)**
+    A Transformer-based Self-Attention layer is applied across the $K$ patch embeddings. This allows the model to learn stylistic dependencies between different handwriting samples on the same page.
+* **Stage 3: Global Feature Aggregation (+ GeM)**
+    The contextualized embeddings are compressed into a single global descriptor via **Generalized Mean (GeM) Pooling**. This captures the most salient stylistic markers more effectively than standard average pooling.
+
+
+
+This **CNN + Self-Attention + GeM** approach is highly effective for an ablation study because it demonstrates how adding relational context (Attention) and learnable pooling (GeM) improves upon traditional "Flat" architectures.
+
+
+
+
+
+=====================================================================================
+
+
+"""
+model_defs_advanced.py
+----------------------
+Advanced Flat Aggregation using SOTA Retrieval Techniques:
+Self-Attention + Generalized Mean Pooling (GeM).
+"""
+
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+
+# ==========================================
+# 1. THE PATCH ENCODER (Dual-Path Ensemble)
+# ==========================================
+def get_patch_encoder(input_shape=(128, 128, 1), embedding_dim=512) -> nn.Module:
+    class DualPathEncoder(nn.Module):
+        def __init__(self, embedding_dim):
+            super().__init__()
+            self.stem = nn.Sequential(
+                nn.Conv2d(1, 32, kernel_size=3, stride=2, padding=1, bias=False),
+                nn.BatchNorm2d(32),
+                nn.ReLU(inplace=True)
+            )
+            self.branch1 = nn.Sequential(
+                nn.Conv2d(32, 64, kernel_size=3, stride=2, padding=1, bias=False),
+                nn.BatchNorm2d(64),
+                nn.ReLU(inplace=True),
+                nn.Conv2d(64, 64, kernel_size=3, stride=2, padding=1, bias=False),
+                nn.BatchNorm2d(64),
+                nn.ReLU(inplace=True)
+            )
+            self.branch2 = nn.Sequential(
+                nn.Conv2d(32, 64, kernel_size=3, stride=2, padding=2, dilation=2, bias=False),
+                nn.BatchNorm2d(64),
+                nn.ReLU(inplace=True),
+                nn.Conv2d(64, 64, kernel_size=3, stride=2, padding=2, dilation=2, bias=False),
+                nn.BatchNorm2d(64),
+                nn.ReLU(inplace=True)
+            )
+            self.gap = nn.AdaptiveAvgPool2d((1, 1))
+            self.fc = nn.Linear(128, embedding_dim)
+
+        def forward(self, x):
+            x = self.stem(x)
+            f1 = self.branch1(x)
+            f2 = self.branch2(x)
+            combined = torch.cat([f1, f2], dim=1)
+            x = self.gap(combined)
+            x = torch.flatten(x, 1)
+            x = self.fc(x)
+            return F.normalize(x, p=2, dim=1)
+
+    return DualPathEncoder(embedding_dim)
+
+# ==========================================
+# 2. ADVANCED POOLING LAYERS
+# ==========================================
+class GeMPooling(nn.Module):
+    """Generalized Mean Pooling with learnable parameter p."""
+    def __init__(self, p=3.0, eps=1e-6):
+        super().__init__()
+        self.p = nn.Parameter(torch.ones(1) * p)
+        self.eps = eps
+
+    def forward(self, x):
+        # x shape: (Batch, K, Emb_Dim)
+        x = x.clamp(min=self.eps).pow(self.p)
+        return x.mean(dim=1).pow(1. / self.p)
+
+def get_page_encoder(patch_encoder: nn.Module, embedding_dim=512) -> nn.Module:
+    class AttentionGeMPageEncoder(nn.Module):
+        def __init__(self, patch_encoder, emb_dim):
+            super().__init__()
+            self.patch_encoder = patch_encoder
+            
+            # Self-Attention layer allows patches to contextualize each other
+            self.attention = nn.TransformerEncoderLayer(
+                d_model=emb_dim, 
+                nhead=8, 
+                dim_feedforward=emb_dim * 2, 
+                batch_first=True
+            )
+            
+            # GeM replaces basic Mean/Max pooling
+            self.gem = GeMPooling(p=3.0)
+
+        def forward(self, x):
+            B, K, C, H, W = x.shape
+            
+            x = x.reshape(B * K, C, H, W)
+            E = self.patch_encoder(x)
+            E = E.reshape(B, K, -1)
+            
+            # 1. Apply Attention
+            E_attn = self.attention(E)
+            
+            # 2. Apply GeM Pooling
+            pooled = self.gem(E_attn)
+            
+            return F.normalize(pooled, p=2, dim=1)
+            
+    return AttentionGeMPageEncoder(patch_encoder, embedding_dim)
+
+# ==========================================
+# 3. THE SIAMESE WRAPPER & LOSS
+# ==========================================
+def build_triplet_siamese(page_encoder: nn.Module, embedding_dim=512, margin=0.4):
+    class TripletSiamese(nn.Module):
+        def __init__(self, page_encoder, embedding_dim):
+            super().__init__()
+            self.page_encoder = page_encoder
+            self.embedding_dim = embedding_dim
+
+        def forward(self, a_in, p_in, n_in):
+            return torch.cat([
+                self.page_encoder(a_in), 
+                self.page_encoder(p_in), 
+                self.page_encoder(n_in)
+            ], dim=-1)
+
+    model = TripletSiamese(page_encoder, embedding_dim)
+
+    def triplet_loss(_, y_pred):
+        a = y_pred[:, :embedding_dim]
+        p = y_pred[:, embedding_dim:2*embedding_dim]
+        n = y_pred[:, 2*embedding_dim:]
+        pos_dist = torch.sum((a - p) ** 2, dim=1)
+        neg_dist = torch.sum((a - n) ** 2, dim=1)
+        return torch.clamp(pos_dist - neg_dist + margin, min=0.0).mean()
+
+    return model, triplet_loss
+
+
+
+=====================================================================
+
+# train_advanced_flat.py
+# ----------------------
+# Trains the SOTA Attention+GeM Flat architecture.
+
+import yaml, random, os, time, cv2
+import numpy as np
+from pathlib import Path
+from typing import Dict, List
+from tqdm import tqdm
+
+import torch
+from torch.optim import Adam
+from torch.optim.lr_scheduler import ReduceLROnPlateau
+
+from modeling_page_pooling.model_defs_advanced import get_patch_encoder, get_page_encoder, build_triplet_siamese
+
+def print_writer_stats(split_name: str, writer_map: dict):
+    """Prints a formatted table of Writer IDs and their respective page counts."""
+    print(f"\n{'-'*45}")
+    print(f" DATASET: {split_name} ({len(writer_map)} Writers)")
+    print(f"{'-'*45}")
+    print(f"{'Writer ID':<30} | {'Page Count':<10}")
+    print(f"{'-'*45}")
+    
+    total_pages = 0
+    for w_id in sorted(writer_map.keys()):
+        count = len(writer_map[w_id])
+        total_pages += count
+        print(f"{w_id:<30} | {count}")
+        
+    print(f"{'-'*45}")
+    print(f"{'TOTAL PAGES':<30} | {total_pages}")
+    print(f"{'-'*45}\n")
+
+def index_page_writers(root: Path) -> Dict[str, List[Path]]:
+    root = Path(root)
+    out = {}
+    if not root.exists(): return out
+    for writer_dir in sorted(p for p in root.iterdir() if p.is_dir()):
+        imgs = []
+        for ext in ("*.png", "*.jpg", "*.jpeg", "*.bmp", "*.tif", "*.tiff"):
+            imgs.extend(sorted(writer_dir.glob(ext)))
+        if imgs: out[writer_dir.name] = imgs
+    return out
+
+def split_writers(all_writers: Dict[str, List[Path]], val_frac: float = 0.2, seed: int = 42):
+    writers = list(all_writers.keys())
+    rnd = random.Random(seed)
+    rnd.shuffle(writers)
+    if len(writers) <= 1: return all_writers, {}
+    n_val = max(1, int(round(len(writers) * val_frac)))
+    val_ids = set(writers[:n_val])
+    train = {w: all_writers[w] for w in writers if w not in val_ids}
+    val = {w: all_writers[w] for w in writers if w in val_ids}
+    return train, val
+
+def sample_two_distinct(items: List[Path], rnd: random.Random):
+    return rnd.sample(items, 2)
+
+def set_seeds(seed: int):
+    np.random.seed(seed); random.seed(seed); torch.manual_seed(seed)
+    if torch.cuda.is_available(): torch.cuda.manual_seed_all(seed)
+
+if torch.cuda.is_available():
+    os.environ["TORCH_ALLOW_TF32"] = "1"
+    scaler = torch.cuda.amp.GradScaler()
+else:
+    scaler = None
+
+class TripletPagePatchGenerator:
+    def __init__(self, writers_dict, cfg, is_train=True):
+        self.writers_dict = {w: v for w, v in writers_dict.items() if len(v) >= 2}
+        self.writer_ids = list(self.writers_dict.keys())
+        self.cfg = cfg
+        self.bs = cfg["training"]["batch_size"]
+        self.K = 32
+        self.patch_size = cfg["preprocessing"].get("patch_size", 128)
+        self.min_fg = cfg["preprocessing"].get("min_foreground", 0.04)
+        self.max_dim = cfg.get("segment_lines", {}).get("max_dim", 1024)
+        self.num_samples = sum(len(v) for v in self.writers_dict.values())
+
+    def __len__(self):
+        return max(1, self.num_samples // self.bs)
+
+    def _page_to_K_patches(self, img_path):
+        img = cv2.imread(str(img_path), cv2.IMREAD_GRAYSCALE)
+        h, w = img.shape
+        if max(h, w) > self.max_dim:
+            scale = self.max_dim / max(h, w)
+            img = cv2.resize(img, (int(w * scale), int(h * scale)), interpolation=cv2.INTER_AREA)
+
+        if self.cfg["preprocessing"].get("use_clahe", True):
+            img = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8)).apply(img)
+            
+        thr = cv2.threshold(img, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1]
+        fg_mask = 1.0 - (thr.astype("float32") / 255.0)
+        img_f = img.astype("float32") / 255.0
+
+        H, W = img_f.shape
+        valid_patches = []
+        stride = self.cfg["preprocessing"].get("stride", 56)
+        
+        for y in range(0, max(1, H - self.patch_size + 1), stride):
+            for x in range(0, max(1, W - self.patch_size + 1), stride):
+                y_end, x_end = min(y + self.patch_size, H), min(x + self.patch_size, W)
+                p_fg = fg_mask[y:y_end, x:x_end]
+                if (np.mean(p_fg) if p_fg.size > 0 else 0) >= self.min_fg:
+                    patch = img_f[y:y_end, x:x_end]
+                    if patch.shape[0] < self.patch_size or patch.shape[1] < self.patch_size:
+                        patch = cv2.copyMakeBorder(patch, 0, self.patch_size - patch.shape[0], 
+                                                   0, self.patch_size - patch.shape[1], 
+                                                   cv2.BORDER_CONSTANT, value=1.0)
+                    valid_patches.append(patch)
+
+        if not valid_patches:
+            valid_patches = [np.ones((self.patch_size, self.patch_size), dtype=np.float32)]
+            
+        if len(valid_patches) >= self.K:
+            idx = np.random.choice(len(valid_patches), self.K, replace=False)
+            Kpatches = np.stack([valid_patches[i] for i in idx], axis=0)
+        else:
+            Kpatches = np.stack([valid_patches[i % len(valid_patches)] for i in range(self.K)], axis=0)
+
+        return np.expand_dims(Kpatches, axis=-1).astype(np.float32)
+
+    def __iter__(self):
+        for _ in range(self.__len__()): yield self.__getitem__(0)
+
+    def __getitem__(self, idx):
+        A = np.zeros((self.bs, self.K, self.patch_size, self.patch_size, 1), dtype=np.float32)
+        P, N = np.zeros_like(A), np.zeros_like(A)
+        for i in range(self.bs):
+            aw = random.choice(self.writer_ids)
+            a_path, p_path = sample_two_distinct(self.writers_dict[aw], random)
+            nw = random.choice([w for w in self.writer_ids if w != aw])
+            n_path = random.choice(self.writers_dict[nw])
+            A[i] = self._page_to_K_patches(a_path)
+            P[i] = self._page_to_K_patches(p_path)
+            N[i] = self._page_to_K_patches(n_path)
+        return (A, P, N), np.zeros((self.bs, 1), dtype=np.float32)
+
+def main():
+    with open("config.yml", "r") as f:
+        cfg = yaml.safe_load(f)
+
+    set_seeds(cfg["training"]["seed"])
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    print(f"Using device: {device}")
+
+    train_dir = Path(cfg["paths"]["train_dir"])
+    train_map = index_page_writers(train_dir)
+    train_map, val_map = split_writers(train_map, val_frac=cfg["training"]["val_split_by_writers"], seed=cfg["training"]["seed"])
+
+    # Print the writer stats
+    print_writer_stats("TRAINING SET", train_map)
+    print_writer_stats("VALIDATION SET", val_map)
+
+    train_gen = TripletPagePatchGenerator(train_map, cfg, is_train=True)
+    val_gen   = TripletPagePatchGenerator(val_map, cfg, is_train=False)
+
+    patch = cfg["preprocessing"]["patch_size"]
+    emb   = cfg["training"]["embedding_dim"]
+    
+    # Init Advanced Model
+    patch_encoder = get_patch_encoder(input_shape=(patch, patch, 1), embedding_dim=emb)
+    page_encoder  = get_page_encoder(patch_encoder, embedding_dim=emb)
+    siamese, triplet_loss = build_triplet_siamese(page_encoder, embedding_dim=emb, margin=cfg["training"]["triplet_margin"])
+    siamese.to(device)
+
+    opt = Adam(siamese.parameters(), lr=cfg["training"]["learning_rate"])
+    scheduler = ReduceLROnPlateau(opt, mode='min', factor=0.5, patience=3, min_lr=1e-6)
+
+    ckpt_path = cfg["paths"]["chk_points_weights"]
+    base_path = cfg["paths"]["base_encoder_weights"]
+    
+    best_val = float("inf")
+    best_epoch = 0
+    patience = cfg["training"]["early_stopping_patience"]
+    no_improve = 0
+    epoch_times = []
+
+    print("\n" + "="*50)
+    print(" STARTING SOTA FLAT PAGE TRAINING (Attn+GeM)")
+    print("="*50)
+    
+    epochs = cfg["training"]["epochs"]
+    for epoch in range(1, epochs + 1):
+        epoch_start = time.time()
+        siamese.train()
+        running_train_loss = 0.0
+        
+        train_pbar = tqdm(train_gen, desc=f"Epoch {epoch}/{epochs} [TRAIN]", leave=False)
+        for (A, P, N), _ in train_pbar:
+            A = torch.from_numpy(np.transpose(A, (0,1,4,2,3))).to(device) 
+            P = torch.from_numpy(np.transpose(P, (0,1,4,2,3))).to(device)
+            N = torch.from_numpy(np.transpose(N, (0,1,4,2,3))).to(device)
+
+            opt.zero_grad(set_to_none=True)
+            if scaler is not None:
+                with torch.amp.autocast('cuda'):
+                    loss = triplet_loss(None, siamese(A, P, N))
+                scaler.scale(loss).backward()
+                scaler.step(opt)
+                scaler.update()
+            else:
+                loss = triplet_loss(None, siamese(A, P, N))
+                loss.backward()
+                opt.step()
+
+            running_train_loss += loss.item()
+            train_pbar.set_postfix(train_loss=f"{loss.item():.4f}")
+
+        train_loss_final = running_train_loss / max(1, len(train_gen))
+
+        siamese.eval()
+        running_val_loss = 0.0
+        val_pbar = tqdm(val_gen, desc=f"Epoch {epoch}/{epochs} [VAL]", leave=False)
+        with torch.no_grad():
+            for (A, P, N), _ in val_pbar:
+                A = torch.from_numpy(np.transpose(A, (0,1,4,2,3))).to(device)
+                P = torch.from_numpy(np.transpose(P, (0,1,4,2,3))).to(device)
+                N = torch.from_numpy(np.transpose(N, (0,1,4,2,3))).to(device)
+                vloss = triplet_loss(None, siamese(A, P, N)).item()
+                running_val_loss += vloss
+                val_pbar.set_postfix(val_loss=f"{vloss:.4f}")
+
+        val_loss_final = running_val_loss / max(1, len(val_gen))
+        duration = time.time() - epoch_start
+        epoch_times.append(duration)
+
+        print(f"\n--- EPOCH {epoch} SUMMARY ---")
+        print(f"Train Loss : {train_loss_final:.6f} | Val Loss : {val_loss_final:.6f}")
+        
+        scheduler.step(val_loss_final)
+
+        if val_loss_final < best_val - 1e-12:
+            best_val = val_loss_final
+            best_epoch = epoch
+            torch.save({'model_state_dict': siamese.state_dict()}, ckpt_path)
+            # Save the full page encoder to capture Attention and GeM weights
+            torch.save({'page_encoder_state_dict': page_encoder.state_dict()}, base_path)
+            no_improve = 0
+            print("Status     : [SAVED BEST MODEL]")
+        else:
+            no_improve += 1
+            if no_improve >= patience:
+                print("\n[!] EARLY STOPPING TRIGGERED [!]")
+                break
+
+if __name__ == "__main__":
+    main()
+
+
+
+
+
+
+
+
+
+=================================================================================
+
+# evaluate_advanced_flat.py
+# -------------------------
+# Evaluates the SOTA Attention+GeM Flat architecture.
+# INCLUDES DIAGNOSTIC ENGINE & TIMING METRICS
+
+from __future__ import annotations
+import yaml, random, time, cv2
+from pathlib import Path
+from typing import Dict, List, Optional, Tuple
+import numpy as np
+import torch
+import torch.nn as nn
+from tqdm import tqdm
+from sklearn.metrics import accuracy_score, confusion_matrix, precision_recall_fscore_support
+
+from modeling_page_pooling.model_defs_advanced import get_patch_encoder, get_page_encoder
+
+def print_writer_stats(split_name: str, writer_map: dict):
+    """Prints a formatted table of Writer IDs and their respective page counts."""
+    print(f"\n{'-'*45}")
+    print(f" DATASET: {split_name} ({len(writer_map)} Writers)")
+    print(f"{'-'*45}")
+    print(f"{'Writer ID':<30} | {'Page Count':<10}")
+    print(f"{'-'*45}")
+    
+    total_pages = 0
+    for w_id in sorted(writer_map.keys()):
+        count = len(writer_map[w_id])
+        total_pages += count
+        print(f"{w_id:<30} | {count}")
+        
+    print(f"{'-'*45}")
+    print(f"{'TOTAL PAGES':<30} | {total_pages}")
+    print(f"{'-'*45}\n")
+
+def set_seeds(seed: int):
+    import random as pyrand
+    np.random.seed(seed); pyrand.seed(seed)
+    torch.manual_seed(seed)
+    if torch.cuda.is_available(): torch.cuda.manual_seed_all(seed)
+
+def index_writer_pages(root: Path) -> Dict[str, List[Path]]:
+    writers: Dict[str, List[Path]] = {}
+    for wdir in sorted(p for p in root.iterdir() if p.is_dir()):
+        imgs = []
+        for ext in ("*.png", "*.jpg", "*.jpeg", "*.bmp", "*.tif", "*.tiff"):
+            imgs.extend(sorted(wdir.glob(ext)))
+        if imgs: writers[wdir.name] = imgs
+    return writers
+
+def load_advanced_encoder(cfg, device):
+    patch = cfg["preprocessing"]["patch_size"]
+    emb = cfg["training"]["embedding_dim"]
+    
+    patch_encoder = get_patch_encoder(input_shape=(patch, patch, 1), embedding_dim=emb)
+    page_encoder = get_page_encoder(patch_encoder, embedding_dim=emb).to(device)
+    
+    base_path = cfg["paths"]["base_encoder_weights"]
+    
+    try:
+        checkpoint = torch.load(base_path, map_location=device)
+        state_dict = checkpoint.get("page_encoder_state_dict", checkpoint)
+        page_encoder.load_state_dict(state_dict)
+        print(f"[INFO] Successfully loaded weights from {base_path}")
+    except Exception as e:
+        print(f"[ERROR] Failed to load weights: {e}")
+        
+    page_encoder.eval()
+    return page_encoder
+
+def embed_page_advanced(page_img_path: Path, cfg: dict, page_encoder: nn.Module, device: torch.device) -> Tuple[Optional[np.ndarray], float, float]:
+    t0_total = time.time()
+    
+    img = cv2.imread(str(page_img_path), cv2.IMREAD_GRAYSCALE)
+    if img is None: return None, 0.0, 0.0
+
+    K = 32
+    patch_size = cfg["preprocessing"].get("patch_size", 128)
+    min_fg = cfg["preprocessing"].get("min_foreground", 0.04)
+    max_dim = cfg.get("segment_lines", {}).get("max_dim", 1024)
+
+    h, w = img.shape
+    if max(h, w) > max_dim:
+        scale = max_dim / max(h, w)
+        img = cv2.resize(img, (int(w * scale), int(h * scale)), interpolation=cv2.INTER_AREA)
+
+    if cfg["preprocessing"].get("use_clahe", True):
+        img = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8)).apply(img)
+
+    thr = cv2.threshold(img, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1]
+    fg_mask = 1.0 - (thr.astype("float32") / 255.0)
+    img_f = img.astype("float32") / 255.0
+
+    H, W = img_f.shape
+    valid_patches = []
+    stride = cfg["preprocessing"].get("stride", 56)
+    
+    for y in range(0, max(1, H - patch_size + 1), stride):
+        for x in range(0, max(1, W - patch_size + 1), stride):
+            y_end, x_end = min(y + patch_size, H), min(x + patch_size, W)
+            p_fg = fg_mask[y:y_end, x:x_end]
+            if (np.mean(p_fg) if p_fg.size > 0 else 0) >= min_fg:
+                patch = img_f[y:y_end, x:x_end]
+                if patch.shape[0] < patch_size or patch.shape[1] < patch_size:
+                    patch = cv2.copyMakeBorder(patch, 0, patch_size - patch.shape[0], 
+                                               0, patch_size - patch.shape[1], 
+                                               cv2.BORDER_CONSTANT, value=1.0)
+                valid_patches.append(patch)
+
+    if not valid_patches: return None, 0.0, 0.0
+
+    if len(valid_patches) >= K:
+        rng = np.random.RandomState(sum([ord(c) for c in page_img_path.name]))
+        idx = rng.choice(len(valid_patches), K, replace=False)
+        sampled_patches = np.stack([valid_patches[i] for i in idx], axis=0)
+    else:
+        sampled_patches = np.stack([valid_patches[i % len(valid_patches)] for i in range(K)], axis=0)
+
+    sampled_patches = np.expand_dims(sampled_patches, axis=(0, 2)) # (1, K, 1, 128, 128)
+    
+    # --- Track Inference Time ---
+    t0_infer = time.time()
+    with torch.no_grad():
+        X = torch.from_numpy(sampled_patches).to(device)
+        page_emb = page_encoder(X).cpu().numpy()[0] 
+    t_infer_total = time.time() - t0_infer
+    
+    t_total = time.time() - t0_total
+        
+    return page_emb, t_total, t_infer_total
+
+def main():
+    cfg = yaml.safe_load(open("config.yml", "r"))
+    set_seeds(cfg.get("runtime", {}).get("seed", 123))
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+    wmap = index_writer_pages(Path(cfg["paths"]["page_test_dir"]))
+    
+    # Print the writer stats for Evaluation
+    print_writer_stats("EVALUATION (TEST) SET", wmap)
+    
+    page_encoder = load_advanced_encoder(cfg, device)
+
+    N_POS, N_NEG = 150, 150
+    writers = list(wmap.keys())
+    
+    pos_cands, neg_cands = [], []
+    for w in writers:
+        files = wmap[w]
+        for i in range(len(files)):
+            for j in range(i+1, len(files)): pos_cands.append((files[i], files[j]))
+    random.shuffle(pos_cands)
+    pos_pairs = pos_cands[:N_POS]
+
+    for i in range(len(writers)):
+        for j in range(i+1, len(writers)):
+            for f1 in wmap[writers[i]]:
+                for f2 in wmap[writers[j]]: neg_cands.append((f1, f2))
+    random.shuffle(neg_cands)
+    neg_pairs = neg_cands[:N_NEG]
+
+    pairs = pos_pairs + neg_pairs
+    labels = np.array([1]*len(pos_pairs) + [0]*len(neg_pairs), dtype=int)
+
+    cache = {}
+    dists = []
+    metric = cfg["evaluation_page"]["metric"]
+    
+    # Initialize timing accumulators
+    total_processing_time = 0.0
+    total_inference_time = 0.0
+    pages_processed = 0
+    
+    for p1, p2 in tqdm(pairs, desc="Evaluating ADVANCED FLAT Model"):
+        # Process and time p1
+        if p1 not in cache: 
+            emb1, t_tot1, t_inf1 = embed_page_advanced(p1, cfg, page_encoder, device)
+            cache[p1] = emb1
+            if emb1 is not None:
+                total_processing_time += t_tot1
+                total_inference_time += t_inf1
+                pages_processed += 1
+
+        # Process and time p2
+        if p2 not in cache: 
+            emb2, t_tot2, t_inf2 = embed_page_advanced(p2, cfg, page_encoder, device)
+            cache[p2] = emb2
+            if emb2 is not None:
+                total_processing_time += t_tot2
+                total_inference_time += t_inf2
+                pages_processed += 1
+                
+        e1, e2 = cache[p1], cache[p2]
+        
+        if e1 is None or e2 is None or np.isnan(e1).any() or np.isnan(e2).any(): 
+            dists.append(2.0)
+        else: 
+            val = 1.0 - float(np.dot(e1, e2)) if metric == "cosine" else float(np.linalg.norm(e1 - e2))
+            dists.append(val)
+    
+    dists = np.asarray(dists, float)
+    
+    print("\n" + "="*50)
+    print(" ENGINE DIAGNOSTICS ")
+    print("="*50)
+    pos_dists = dists[labels == 1]
+    neg_dists = dists[labels == 0]
+    
+    print(f"Total NaNs or 'None':               {np.sum(dists == 2.0)}")
+    print(f"Mean distance of SAME writers:      {np.mean(pos_dists):.4f}")
+    print(f"Mean distance of DIFFERENT writers: {np.mean(neg_dists):.4f}")
+    
+    if np.abs(np.mean(pos_dists) - np.mean(neg_dists)) < 0.05:
+        print("\n[!] VERDICT: COMPLETE MODE COLLAPSE [!]")
+    elif np.sum(dists == 2.0) > 10:
+        print("\n[!] VERDICT: DATA EXTRACTION FAILURE [!]")
+    else:
+        print("\n[INFO] VERDICT: Math is healthy. Model is generalizing.")
+    print("="*50)
+
+    th_cfg = cfg["evaluation_page"]["thresholds"]
+    ths = np.arange(float(th_cfg["start"]), float(th_cfg["stop"]), float(th_cfg["step"]))
+    
+    precs, recs = [], []
+    for th in ths:
+        preds = (dists < th).astype(int)
+        p, r, _, _ = precision_recall_fscore_support(labels, preds, average="binary", zero_division=0)
+        precs.append(p); recs.append(r)
+
+    # --- Find threshold where Precision and Recall are closest ---
+    precs_arr = np.array(precs)
+    recs_arr = np.array(recs)
+    
+    # Ignore broken threshold bounds (like th=0.0) where both are 0
+    valid_mask = (precs_arr + recs_arr) > 0
+    diffs = np.where(valid_mask, np.abs(precs_arr - recs_arr), np.inf)
+    
+    best_idx = np.argmin(diffs)
+    th_pr = ths[best_idx]
+    
+    preds_bal = (dists < th_pr).astype(int)
+    acc = accuracy_score(labels, preds_bal)
+    prec, rec, _, _ = precision_recall_fscore_support(labels, preds_bal, average="binary", zero_division=0)
+
+    print("\n" + "="*50)
+    print(" SOTA FLAT PAGE EVALUATION (Attn + GeM) ")
+    print("="*50)
+    
+    # Print Timing Metrics
+    if pages_processed > 0:
+        avg_tot = total_processing_time / pages_processed
+        avg_inf = total_inference_time / pages_processed
+        print(f"Avg Total Time per Page     : {avg_tot:.4f} sec")
+        print(f"Avg Inference Time per Page : {avg_inf:.4f} sec")
+        print(f"Avg Prep/Sampling Time      : {(avg_tot - avg_inf):.4f} sec")
+        print("-" * 50)
+
+    print(f"Metrics @ PR≈RC (Threshold: {th_pr:.6f})")
+    print(f"Accuracy : {acc * 100:.2f}%")
+    print(f"Precision: {prec * 100:.2f}%")
+    print(f"Recall   : {rec * 100:.2f}%")
+    print("="*50)
+
+if __name__ == "__main__":
+    main()
+
+
+
+
+
+
+
+
+=================================== EPOCH ==================================
+
+
+
+
+.amp.GradScaler('cuda', args...)` instead.
+  scaler = torch.cuda.amp.GradScaler()
+Using device: cuda
+
+---------------------------------------------
+ DATASET: TRAINING SET (64 Writers)
+---------------------------------------------
+Writer ID                      | Page Count
+---------------------------------------------
+1                              | 3
+10                             | 5
+11                             | 4
+12                             | 7
+13                             | 2
+14                             | 4
+15                             | 7
+16                             | 5
+18                             | 1
+19                             | 5
+2                              | 2
+20                             | 4
+21                             | 8
+22                             | 4
+24                             | 6
+25                             | 7
+26                             | 8
+27                             | 6
+28                             | 3
+29                             | 3
+3                              | 2
+31                             | 8
+32                             | 5
+33                             | 5
+34                             | 7
+35                             | 5
+36                             | 3
+38                             | 6
+39                             | 2
+4                              | 2
+40                             | 3
+5                              | 2
+6                              | 4
+7                              | 4
+Writer_0031                    | 13
+Writer_0032                    | 7
+Writer_0034                    | 13
+Writer_0035                    | 13
+Writer_0036                    | 13
+Writer_0038                    | 13
+Writer_0039                    | 13
+Writer_0042                    | 13
+Writer_0043                    | 12
+Writer_0044                    | 13
+Writer_0045                    | 12
+Writer_0047                    | 4
+Writer_0049                    | 3
+Writer_0051                    | 3
+Writer_0052                    | 3
+Writer_0055                    | 3
+Writer_0056                    | 3
+Writer_0057                    | 3
+Writer_0058                    | 3
+Writer_0059                    | 3
+Writer_0060                    | 3
+Writer_0061                    | 3
+Writer_0062                    | 3
+Writer_0064                    | 3
+Writer_0065                    | 3
+Writer_0066                    | 3
+Writer_0067                    | 3
+Writer_0068                    | 3
+Writer_0069                    | 3
+Writer_0070                    | 3
+---------------------------------------------
+TOTAL PAGES                    | 345
+---------------------------------------------
+
+
+---------------------------------------------
+ DATASET: VALIDATION SET (16 Writers)
+---------------------------------------------
+Writer ID                      | Page Count
+---------------------------------------------
+17                             | 5
+23                             | 9
+30                             | 9
+37                             | 6
+8                              | 8
+9                              | 6
+Writer_0033                    | 13
+Writer_0037                    | 13
+Writer_0040                    | 13
+Writer_0041                    | 13
+Writer_0046                    | 3
+Writer_0048                    | 3
+Writer_0050                    | 3
+Writer_0053                    | 3
+Writer_0054                    | 3
+Writer_0063                    | 3
+---------------------------------------------
+TOTAL PAGES                    | 113
+---------------------------------------------
+
+
+
+
+
+
+
+
+
+==================================================
+ SOTA ADVANCED (Attn+GeM) BENCHMARK: Architectural Complexity
+Total Parameters: 2.2803 M
+FLOPs (MACs):      1.94 G (per page, K=32)
+==================================================
+
+
+
+
+
+
+
+
+==================================================
+ STARTING SOTA FLAT PAGE TRAINING (Attn+GeM)
+==================================================
+                                                                                                                                                                                  
+--- EPOCH 1 SUMMARY ---
+Train Loss : 0.260512 | Val Loss : 0.352708
+Status     : [SAVED BEST MODEL]
+
+--- EPOCH 2 SUMMARY ---
+Train Loss : 0.159854 | Val Loss : 0.277686
+Status     : [SAVED BEST MODEL]
+
+--- EPOCH 3 SUMMARY ---
+Train Loss : 0.124456 | Val Loss : 0.234444
+Status     : [SAVED BEST MODEL]
+
+--- EPOCH 4 SUMMARY ---
+Train Loss : 0.100722 | Val Loss : 0.222174
+Status     : [SAVED BEST MODEL]
+                                                                                                                                                                                  
+--- EPOCH 5 SUMMARY ---
+Train Loss : 0.102210 | Val Loss : 0.199252
+Status     : [SAVED BEST MODEL]
+
+--- EPOCH 6 SUMMARY ---
+Train Loss : 0.132106 | Val Loss : 0.144124
+Status     : [SAVED BEST MODEL]
+
+--- EPOCH 7 SUMMARY ---
+Train Loss : 0.065300 | Val Loss : 0.112457
+Status     : [SAVED BEST MODEL]
+
+--- EPOCH 8 SUMMARY ---
+Train Loss : 0.077713 | Val Loss : 0.092117
+Status     : [SAVED BEST MODEL]
+
+--- EPOCH 9 SUMMARY ---
+Train Loss : 0.050287 | Val Loss : 0.077059
+Status     : [SAVED BEST MODEL]
+                                                                                                                                                                                  
+--- EPOCH 10 SUMMARY ---
+Train Loss : 0.073202 | Val Loss : 0.124866
+                                                                                                                                                                                  
+--- EPOCH 11 SUMMARY ---
+Train Loss : 0.053860 | Val Loss : 0.130356
+
+--- EPOCH 12 SUMMARY ---
+Train Loss : 0.056042 | Val Loss : 0.173912
+                                                                                                                                                                                  
+--- EPOCH 13 SUMMARY ---
+Train Loss : 0.045280 | Val Loss : 0.076064
+Status     : [SAVED BEST MODEL]
+
+--- EPOCH 14 SUMMARY ---
+Train Loss : 0.054154 | Val Loss : 0.087859
+
+--- EPOCH 15 SUMMARY ---
+Train Loss : 0.037910 | Val Loss : 0.068371
+Status     : [SAVED BEST MODEL]
+
+--- EPOCH 16 SUMMARY ---
+Train Loss : 0.035956 | Val Loss : 0.090303
+                                                                                                                                                                                  
+--- EPOCH 17 SUMMARY ---
+Train Loss : 0.023048 | Val Loss : 0.140212
+                                                                                                                                                                                  
+--- EPOCH 18 SUMMARY ---
+Train Loss : 0.043105 | Val Loss : 0.071678
+                                                                                                                                                                                  
+--- EPOCH 19 SUMMARY ---
+Train Loss : 0.022252 | Val Loss : 0.123789
+                                                                                                                                                                                  
+--- EPOCH 20 SUMMARY ---
+Train Loss : 0.049822 | Val Loss : 0.118556
+
+
+
+
+
+
+
+========================= Evaluation ========================
+
+
+
+
+---------------------------------------------
+ DATASET: EVALUATION (TEST) SET (10 Writers)
+---------------------------------------------
+Writer ID                      | Page Count
+---------------------------------------------
+215                            | 5
+216                            | 5
+217                            | 3
+218                            | 3
+219                            | 8
+Writer_0000                    | 7
+Writer_0001                    | 8
+Writer_0002                    | 7
+Writer_0004                    | 6
+Writer_0005                    | 8
+---------------------------------------------
+TOTAL PAGES                    | 60
+---------------------------------------------
+
+[INFO] Successfully loaded weights from ./trained_model_ablation_study/patches_to_page_pooling.pt
+Evaluating ADVANCED FLAT Model: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████| 300/300 [00:03<00:00, 97.21it/s]
+
+==================================================
+ ENGINE DIAGNOSTICS
+==================================================
+
+
+[INFO] VERDICT: Math is healthy. Model is generalizing.
+==================================================
+Total NaNs or 'None':               0
+Mean distance of SAME writers:      0.0526
+Mean distance of DIFFERENT writers: 0.4264
+
+
+[INFO] VERDICT: Math is healthy. Model is generalizing.
+==================================================
+
+
+==================================================
+ SOTA FLAT PAGE EVALUATION (Attn + GeM)
+==================================================
+Avg Total Time per Page     : 0.0509 sec
+Avg Inference Time per Page : 0.0076 sec
+Avg Prep/Sampling Time      : 0.0433 sec
+--------------------------------------------------
+Metrics @ PR≈RC (Threshold: 0.157500)
+Accuracy : 92.67%
+Precision: 92.67%
+Recall   : 92.67%
+==================================================
