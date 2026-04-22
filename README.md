@@ -1,33 +1,29 @@
-# A Deep Embedding Framework for Bangla Handwriting Analysis: Writer Verification, Document Retrieval, Clustering, and Intrinsic Plagiarism Detection
+# AUnified Framework for Open-Set Bengali Handwriting Analysis
 
 
 
-## Writer Verification (Line-level, Patch Pooling)
+## Writer Verification (Line-level, Patch Pooling) and (Page-level, Line Pooling):
 
-This system verifies whether two handwriting **lines** come from the **same writer**.
-It uses a robust preprocessing pipeline + content-aware **patch pooling** and learns a writer-style embedding with a **triplet loss**.
+WRITER verification (1:1 matching) determines whether two different handwriting samples were authored by the same person.
 
-
-## Writer Verification (Page-level, Line Pooling)
-
-This system further verifies whether two handwriting **pages** come from the **same writer**.
-It first extract **Lines** from a page using **easyocr**, then do **line embeddings** of these lines, then do **mean pooling** of these lines, that represents **page level embeddings**. 
-
-Then the model compares two page level embeddings and finds cosine distance to determine whether they are of the same writer or different.
 
 
 ## Page document Retrieval based on writers handwriting:
 
-Given reference a writer's handwritings and a document pool(containing many pages of handwritings of many different writers, including reference writer), this system can extract all the handwriting documents of the reference writer and store them to desired path
+Writer retrieval (1:N search) involves taking a single query document and ranking a vast database of other documents based on their stylistic similarity. 
 
 
 ## Document Clustering based on writers:
 
-Given a document pool (containing many pages of handwritings of many different writers), this system can cluster documents based on handwriting, where same handwritings are stored in the same cluster. Also number of writers are not needed, this system automatically finds it. 
+Writer-based document clustering is an unsupervised task that groups a massive, unlabelled stack of documents according to their distinct, unknown authors based on handwriting style only. 
 
-# J. Multi-Writer Segmentation (Intrinsic Plagiarism Detection)
+## Sequential multi-writer segmentation
 
-Multi-writer segmentation addresses the complex task of identifying distinct authorship boundaries within a handwritten document. This capability forms the core of **intrinsic plagiarism detection**. Standard plagiarism checks rely on comparing a suspicious document against an external reference database. In contrast, intrinsic detection analyzes the internal stylistic consistency of the document itself. By autonomously identifying sudden, unauthorized shifts in handwriting style across consecutive lines or paragraphs, the system can flag sections that were forged or completed by an unauthorized collaborator.
+Sequential multi-writer segmentation is the task of detecting whether a single document page is written by multiple writers mapping the exact chronological order of multiple distinct authors collaborating on a single, continuous page.
+
+
+
+
 
 
 
