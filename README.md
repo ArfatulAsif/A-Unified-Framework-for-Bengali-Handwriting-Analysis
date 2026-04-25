@@ -299,7 +299,7 @@ sweeps a threshold, and prints Accuracy, Precision/Recall/F1, FAR/FRR, and AUC. 
 # 4. reports 
 
 
-## `./reports` : folder contains report of base encoder training and epoch and evaluation reports
+### `./reports` : folder contains report of base encoder training and epoch and evaluation reports
 
 
 
@@ -392,16 +392,104 @@ python -m page.predict ./path/to/image1.jpg ./path/to/image2.jpg
 
 
 
+### Evaluate retrieval: `evaluate_retrieval.py` 
+
+This is used for evaluating retrieval accuracy metrics.
+
+
+### Use retrieval: `use_retrieval.py`
+
+
+```bash
+python -m retrieval.use_retrieval /path/to/pool /path/to/reference_page.jpg /path/to/save_dir
+```
+
+<br>
+
+<img src="images/retrieving.png">
 
 
 
 
 
 
-# 9. Clustering: 
+# 9. reports_retrieval:
+
+
+### `./reports_retrieval` : folder contains report of retrieval pipeline evaluation reports
 
 
 
 
 
 
+# 10. Clustering: Clustering_Agglomerative
+
+
+<img src="images/clustering.png">
+
+
+### Algorithm : `cluster.py`: 
+
+This file contains the core clustering algorithm. Currently best performing one is Agglomerative, DBSCAN was also considered
+
+### Tune clustering: `tune_agglomerative.py`:
+
+
+This file is used to tune the clustering pipeline.
+
+
+### Evaluation: `evaluate_agglomerative.py`:
+
+This file is used to evaluate the clustering pipeline.
+ 
+
+
+# 11. reports_clustering:
+
+
+### `./reports_clustering` : folder contains report of clustering pipeline evaluation reports
+
+
+
+
+
+# 12. multi_writer: 
+
+
+### Evaluate multi_writer segmentation pipeline: `evaluate_multi_writer_segmentation_no_noise.py`
+
+
+<img src="images/multi_writer.png">
+
+This code is used to evaluate.
+
+
+
+### Use single_page multi_writer segmentation: `use_single_page_segmentation.py`
+
+
+<img src="images/multi_writer_segmentation.png">
+
+
+
+```bash
+python -m multi_writer.use_single_page_segmentation --image path/to/your/image.jpg
+```
+
+
+
+
+# 13. reports_multi_writer_segmentation: 
+
+
+
+### `./reports_multi_writer_segmentation` : folder contains report of multi_writer_segmentation pipeline evaluation reports
+ 
+
+
+
+
+# 14. Ablation study: 
+
+This folder contains complex code for entire ablation study. Ablation study was conducted on 100 writer cohorts.

@@ -1,7 +1,7 @@
 # multi_writer/use_single_page_segment.py
 # Usage: python -m multi_writer.use_single_page_segmentation --image path/to/your/image.jpg
 
-#  python -m multi_writer.use_single_page_segmentation --image ./data/Multi_Writer/Test_pages/0001_0002_0003_0006.jpg
+#  python -m multi_writer.use_single_page_segmentation --image ./data/Multi_Writer/Test_pages/0000_0001_0002_0004.jpg
 
 import os
 import sys
