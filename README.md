@@ -65,14 +65,7 @@ Sequential multi-writer segmentation is the task of detecting whether a single d
 <br>
 
 
----
----
----
 
-
-# This one following old version:
-
-# The updated pipeline is on `0 paper` folder:
 
 
 ---
