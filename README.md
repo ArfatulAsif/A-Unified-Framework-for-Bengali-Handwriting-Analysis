@@ -1,5 +1,16 @@
 # A Unified Framework for Open-Set Bengali Handwriting Analysis:
 
+<div align="center">
+
+[![python](https://img.shields.io/badge/Python-3.9.13-blue?logo=python&logoColor=white)](https://www.python.org/)
+[![pytorch](https://img.shields.io/badge/PyTorch-2.8.0-ee4c2c?logo=pytorch&logoColor=white)](https://pytorch.org/get-started/locally/)
+[![cuda](https://img.shields.io/badge/CUDA-12.8-green?logo=nvidia&logoColor=white)](https://developer.nvidia.com/cuda-toolkit-archive)
+[![cudnn](https://img.shields.io/badge/cuDNN-8.9.7-orange?logo=nvidia&logoColor=white)](https://developer.nvidia.com/rdp/cudnn-archive) <br>
+[![license](https://img.shields.io/badge/License-MIT-green.svg?labelColor=gray)](https://github.com/ArfatulAsif/A-Unified-Framework-for-Bengali-Handwriting-Analysis#license)
+[![PRs](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/ArfatulAsif/A-Unified-Framework-for-Bengali-Handwriting-Analysis/pulls)
+[![contributors](https://img.shields.io/github/contributors/ArfatulAsif/A-Unified-Framework-for-Bengali-Handwriting-Analysis.svg)](https://github.com/ArfatulAsif/A-Unified-Framework-for-Bengali-Handwriting-Analysis/graphs/contributors)
+
+</div>
 
 
 ## Writer Verification (Line-level, Patch Pooling) and (Page-level, Line Pooling):
