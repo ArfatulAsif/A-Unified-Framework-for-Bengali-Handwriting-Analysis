@@ -12,6 +12,7 @@
 
 </div>
 
+<br>
 
 ## Writer Verification (Line-level, Patch Pooling) and (Page-level, Line Pooling):
 
