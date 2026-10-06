@@ -1,5 +1,7 @@
 ## 1. Data
 
+<br>
+
 ### Dataset Folder Structure
 ```text
 ./data/Train/<writer_id>/<doc_id>/*.jpg                --- line dataset
